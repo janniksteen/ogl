@@ -1,4 +1,4 @@
-package dk.norgaardsteen.ogl;
+package dk.norgaardsteen.ogl.shader;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
