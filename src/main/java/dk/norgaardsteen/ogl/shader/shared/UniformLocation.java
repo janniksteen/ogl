@@ -1,4 +1,4 @@
-package dk.norgaardsteen.ogl;
+package dk.norgaardsteen.ogl.shader.shared;
 
 /**
  * User: jns

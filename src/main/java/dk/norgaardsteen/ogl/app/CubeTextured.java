@@ -1,8 +1,14 @@
-package dk.norgaardsteen.ogl;
+package dk.norgaardsteen.ogl.app;
 
+import dk.norgaardsteen.ogl.Base;
 import dk.norgaardsteen.ogl.math.Trigonometric;
 import dk.norgaardsteen.ogl.mesh.Quad;
 import dk.norgaardsteen.ogl.mesh.Shape;
+import dk.norgaardsteen.ogl.shader.ProgramLinker;
+import dk.norgaardsteen.ogl.shader.ProgramLinkerResult;
+import dk.norgaardsteen.ogl.shader.ShaderCompiler;
+import dk.norgaardsteen.ogl.shader.shared.AttribLocation;
+import dk.norgaardsteen.ogl.shader.shared.UniformLocation;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.input.Keyboard;
@@ -27,7 +33,7 @@ import java.util.List;
  * Date: 11/1/13
  * Time: 11:51 AM
  */
-public class Quad3D extends Base {
+public class CubeTextured extends Base {
 
   protected static final Vector3f X_AXIS = new Vector3f(1.0f, 0.0f, 0.0f);
   protected static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
@@ -60,7 +66,7 @@ public class Quad3D extends Base {
   private Vector3f cameraRotation = new Vector3f(0.0f, 0.0f, 0.0f);
   private final float cameraRotationDelta = 3f;
 
-  private float fieldOfView = 45.0f;
+  private float fieldOfView = 67.0f;
   private final float fieldOfViewDelta = 1.0f;
 
   private final float rotationDelta = 5f;
@@ -337,7 +343,7 @@ public class Quad3D extends Base {
   @Override
   public void init() {
     try {
-      Display.setTitle(Quad3D.class.getName());
+      Display.setTitle(CubeTextured.class.getName());
       Display.setDisplayMode(new DisplayMode(displayWidth, displayHeight));
       Keyboard.enableRepeatEvents(true);
 
@@ -353,7 +359,7 @@ public class Quad3D extends Base {
 
       // set viewport and blank color
       GL11.glViewport(0, 0, displayWidth, displayHeight);
-      GL11.glClearColor(0.184f, 0.310f, 0.310f, 0.0f);
+      GL11.glClearColor(0.4f, 0.6f, 0.9f, 0f);
       GL11.glEnable(GL11.GL_DEPTH_TEST);
       GL11.glDepthFunc(GL11.GL_LESS);
     } catch (LWJGLException e) {
@@ -375,7 +381,7 @@ public class Quad3D extends Base {
   }
 
   public static void main(String[] args) {
-    Quad3D fun = new Quad3D();
+    CubeTextured fun = new CubeTextured();
     fun.start();
     fun.stop();
   }
