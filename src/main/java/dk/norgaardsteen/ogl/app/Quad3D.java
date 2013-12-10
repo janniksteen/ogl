@@ -1,11 +1,11 @@
 package dk.norgaardsteen.ogl.app;
 
-import dk.norgaardsteen.ogl.AttribLocation;
+import dk.norgaardsteen.ogl.mesh.DeprecatedShape;
+import dk.norgaardsteen.ogl.shader.shared.AttribLocation;
 import dk.norgaardsteen.ogl.Base;
-import dk.norgaardsteen.ogl.UniformLocation;
+import dk.norgaardsteen.ogl.shader.shared.UniformLocation;
 import dk.norgaardsteen.ogl.math.Trigonometric;
 import dk.norgaardsteen.ogl.mesh.Quad;
-import dk.norgaardsteen.ogl.mesh.Shape;
 import dk.norgaardsteen.ogl.shader.ProgramLinker;
 import dk.norgaardsteen.ogl.shader.ProgramLinkerResult;
 import dk.norgaardsteen.ogl.shader.ShaderCompiler;
@@ -55,7 +55,7 @@ public class Quad3D extends Base {
   protected static final String VERTEX_SHADER_FILE = "src/main/resources/shaders/simple.vsh";
   protected static final String FRAGMENT_SHADER_FILE = "src/main/resources/shaders/simple.fsh";
 
-  private final Shape shape = new Quad();
+  private final DeprecatedShape shape = new Quad();
   private float vertices[];
 
   private Vector3f modelScale = new Vector3f(0.5f, 0.5f, 0.0f);
@@ -77,6 +77,7 @@ public class Quad3D extends Base {
 
   @Override
   public void prepareBuffers() {
+    vertices = shape.vertices();
     // convert vertices array to buffer
     FloatBuffer verticesBuffer = BufferUtils.createFloatBuffer(vertices.length);
     verticesBuffer.put(vertices);
@@ -121,6 +122,11 @@ public class Quad3D extends Base {
 
     // unbind!
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+  }
+
+  @Override
+  public void prepareTextures() {
+    //To change body of implemented methods use File | Settings | File Templates.
   }
 
   @Override
@@ -305,11 +311,6 @@ public class Quad3D extends Base {
     }
 
     return programLinkerResult.programHandle;
-  }
-
-  @Override
-  public void prepareMesh() {
-    vertices = shape.vertices();
   }
 
   @Override

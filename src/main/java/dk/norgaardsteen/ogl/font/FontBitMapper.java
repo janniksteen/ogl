@@ -10,7 +10,9 @@ import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -75,8 +77,17 @@ public class FontBitMapper {
     System.out.println("Avaliable glyphs: " + glyphs.toString());
     System.out.println("Discarded " + discard + " as not avaliable in this font selection.");
 
+    String fileBaseName = outputDirectory + "/uc0x" + Integer.toHexString(unicodeStart) + "_0x" + Integer.toHexString(unicodeEnd) + "_" + font.getName() + "_x" + GLYPH_TILE_DIMENSION_X + "_y" + GLYPH_TILE_DIMENSION_Y;
+    String atlasDescriptionFileName = fileBaseName + ".fnt";
+    PrintWriter descriptionWriter = null;
+    try {
+      descriptionWriter = new PrintWriter(new File(atlasDescriptionFileName));
+      descriptionWriter.println("# unicode, glyph atlas x pos, glyph atlas y pos, glyph x size, glyph y size, y offset");
+    } catch (FileNotFoundException e) {
+      System.err.println("Could not open font description file " + atlasDescriptionFileName);
+      System.exit(-1);
+    }
     BufferedImage atlas = new BufferedImage((ATLAS_DIMENSION * GLYPH_TILE_DIMENSION_X), (ATLAS_DIMENSION * GLYPH_TILE_DIMENSION_Y), BufferedImage.TYPE_INT_ARGB);
-
     for (int atlasRow = 0; atlasRow < ATLAS_DIMENSION; atlasRow++) {
       for (int atlasCol = 0; atlasCol < ATLAS_DIMENSION; atlasCol++) {
         int glyphPos = (atlasRow * ATLAS_DIMENSION) + atlasCol;
@@ -85,8 +96,18 @@ public class FontBitMapper {
         int atlasPosY = (atlasRow * GLYPH_TILE_DIMENSION_Y) + GLYPH_TILE_DIMENSION_Y / 2 + GLYPH_PADDING_Y;
         if (glyphPos < glyphs.length()) {
           char c = glyphs.charAt(glyphPos);
-          String glyphString = Character.toString(c);
-          atlasGraphics.drawString(glyphString, atlasPosX, atlasPosY);
+          atlasGraphics.drawString(Character.toString(c), atlasPosX, atlasPosY);
+          descriptionWriter.print((int) c);
+          descriptionWriter.print(",");
+          descriptionWriter.print(atlasCol * GLYPH_TILE_DIMENSION_X);
+          descriptionWriter.print(",");
+          descriptionWriter.print(atlasRow * GLYPH_TILE_DIMENSION_Y);
+          descriptionWriter.print(",");
+          descriptionWriter.print(GLYPH_TILE_DIMENSION_X);
+          descriptionWriter.print(",");
+          descriptionWriter.print(GLYPH_TILE_DIMENSION_Y);
+          descriptionWriter.print(",");
+          descriptionWriter.println("0"); // y-offset: relative amount to move the glyph down to align in a common baseline
         } else {
           atlasGraphics.drawBytes(new byte[]{0, 0, 0, 0}, 0, 4, atlasPosX, atlasPosY);
         }
@@ -94,14 +115,18 @@ public class FontBitMapper {
       }
     }
 
-    String fileName = outputDirectory + "/uc0x" + Integer.toHexString(unicodeStart) + "_0x" + Integer.toHexString(unicodeEnd) + "_" + font.getName() + "_x" + GLYPH_TILE_DIMENSION_X + "_y" + GLYPH_TILE_DIMENSION_Y + ".png";
+    descriptionWriter.flush();
+    descriptionWriter.close();
+    System.out.println("Wrote: " + atlasDescriptionFileName);
+
+    String atlasFileName = fileBaseName + ".png";
     try {
-      File file = new File(fileName);
+      File file = new File(atlasFileName);
       file.createNewFile();
       ImageIO.write(atlas, "png", file);
-      System.out.println("Wrote: " + fileName);
+      System.out.println("Wrote: " + atlasFileName);
     } catch (IOException e) {
-      System.err.println("Failed to write output file " + fileName + ". Error was: " + e.getMessage());
+      System.err.println("Failed to write output file " + atlasFileName + ". Error was: " + e.getMessage());
       System.exit(-1);
     }
   }

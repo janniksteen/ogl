@@ -19,8 +19,8 @@ public abstract class Base implements Lifecycle {
     System.out.println("Started.");
     init();
     programID = prepareProgram(prepareShaders());
-    prepareMesh();
     prepareBuffers();
+    prepareTextures();
     getDelta();
     lastFPS = getTime();
     while (!Display.isCloseRequested()) {

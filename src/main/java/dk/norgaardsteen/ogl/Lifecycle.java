@@ -12,11 +12,11 @@ public interface Lifecycle {
   /** set up display, view port etc. **/
   public void init();
 
-  /** prepare mesh **/
-  public void prepareMesh();
-
   /** prepare vertices arrays etc **/
   public void prepareBuffers();
+
+  /** prepare textures **/
+  public void prepareTextures();
 
   /** prepare the various matrices and load in shader **/
   public void prepareMatrices();

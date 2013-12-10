@@ -1,6 +1,6 @@
 package dk.norgaardsteen.ogl.shader;
 
-import dk.norgaardsteen.ogl.UniformLocation;
+import dk.norgaardsteen.ogl.shader.shared.UniformLocation;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,7 +1,7 @@
 package dk.norgaardsteen.ogl.shader;
 
-import dk.norgaardsteen.ogl.AttribLocation;
-import dk.norgaardsteen.ogl.UniformLocation;
+import dk.norgaardsteen.ogl.shader.shared.UniformLocation;
+import dk.norgaardsteen.ogl.shader.shared.AttribLocation;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 

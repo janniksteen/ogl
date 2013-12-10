@@ -5,7 +5,7 @@ package dk.norgaardsteen.ogl.mesh;
  * Date: 11/19/13
  * Time: 4:38 PM
  */
-public class Quad implements Shape {
+public class Quad implements DeprecatedShape {
 
   private static final int NUM_OF_FACES = 6;
   private static final int NUM_OF_FACE_VERTICES = 6;
@@ -118,38 +118,8 @@ public class Quad implements Shape {
   }
 
   @Override
-  public int numberOfTriangles() {
-    return vertices.length / vertexPositionElementCount() / 3;
-  }
-
-  @Override
-  public int vertexPositionElementOffset() {
-    return 0;
-  }
-
-  @Override
   public float[] colors() {
     return colors;
-  }
-
-  @Override
-  public int colorDefinitionElementCount() {
-    return 3;
-  }
-
-  @Override
-  public int colorDefinitionElementOffset() {
-    return vertexPositionElementOffset();
-  }
-
-  @Override
-  public float[] textures() {
-    return new float[0];
-  }
-
-  @Override
-  public int textureElementCount() {
-    return 0;
   }
 
   public String toString() {
