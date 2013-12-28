@@ -13,7 +13,7 @@
     <args4j.version>2.0.26</args4j.version>
     <natives.version>0.0.7</natives.version>
     <lwjgl.version>2.9.0</lwjgl.version>
-    <twl.pngdecoder>1.1-SNAPSHOT</twl.pngdecoder>
+    <fastpng.version>1.0</fastpng.version>
   </properties>
 
     <repositories>
@@ -21,6 +21,14 @@
         <id>mavenNatives</id>
         <name>Maven Natives Repository</name>
         <url>http://mavennatives.googlecode.com/svn/repo</url>
+        <snapshots>
+          <enabled>true</enabled>
+        </snapshots>
+      </repository>
+      <repository>
+        <id>nifty-gui</id>
+        <name>Nifty GUI Repository</name>
+        <url>http://nifty-gui.sourceforge.net/nifty-maven-repo</url>
         <snapshots>
           <enabled>true</enabled>
         </snapshots>
@@ -44,9 +52,9 @@
         <version>${lwjgl.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.l33tlabs.twl</groupId>
-        <artifactId>pngdecoder</artifactId>
-        <version>${twl.pngdecoder}</version>
+        <groupId>net.sourceforge</groupId>
+        <artifactId>fastpng</artifactId>
+        <version>${fastpng.version}</version>
       </dependency>
     </dependencies>
 
