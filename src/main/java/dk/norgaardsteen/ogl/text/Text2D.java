@@ -19,22 +19,27 @@ public class Text2D {
 
   public static List<TexturedTextTile> createTextTiles(String text, FontDescription fontDescription, int xPad, int yPad) {
     List<TexturedTextTile> texturedTextTiles = new ArrayList<>();
-    int lineRow = 0;
     int vertexOffset = 0;
     int tileX = 0;
     int tileY = 0;
 
-    for (int charNum = 0; charNum < text.length(); charNum++) {
+    for (int cursor = 0; cursor < text.length(); cursor++) {
       System.out.println("Start create text tile");
-      int unicode = text.codePointAt(charNum);
+      int unicode = text.codePointAt(cursor);
       TexturedTextTile texturedTextTile = new TexturedTextTile((char)unicode);
       System.out.println("char:" + (char)unicode);
       FontDescription.GlyphMeta glyphMeta = fontDescription.getGlyphMeta().get(new Integer(unicode));
 
+      if (unicode == 0x0a) {
+        tileY += glyphMeta.glyphYSize + yPad;
+        tileX = 0;
+        continue;
+      }
+
       // create a character tile
       float leftPos = tileX;
       float rightPos = tileX + glyphMeta.glyphXSize; // x right
-      float bottomPos = tileY + 0; // y bottom
+      float bottomPos = tileY; // y bottom
       float topPos = tileY + glyphMeta.glyphYSize; // y top
 
       // resolve the position of the character texture in the font atlas (texture)

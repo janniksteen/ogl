@@ -35,7 +35,7 @@ public class FontBitMapper {
   private static List<String> avaliableFontNames;
 
   // unicode basic latin1
-  private static int unicodePointStart = 0x0020;
+  private static int unicodePointStart = 0x0000;
   private static int unicodePointEnd = 0x00ff;
 
   private static int ATLAS_DIM = 16;

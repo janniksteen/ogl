@@ -26,6 +26,9 @@ public interface Lifecycle {
   /* load, compile and link shader to programs */
   public void prepareProgram();
 
+  /* initialize shaders */
+  public void prepareShaders();
+
   /* receive input (keyboard, mouse, etc.) */
   public void input();
 

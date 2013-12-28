@@ -21,6 +21,7 @@ public abstract class Base implements Lifecycle {
     System.out.println("Started.");
     init();
     prepareProgram();
+    prepareShaders();
     prepareBuffers();
     prepareTextures();
     prepareMatrices();

@@ -1,7 +1,7 @@
 #version 410
 
-uniform int displayWidth = 1280;
-uniform int displayHeight = 720;
+uniform int displayWidth;
+uniform int displayHeight;
 
 layout(location = 0) in vec2 in_position; // clip-space position
 layout(location = 1) in vec2 in_st;

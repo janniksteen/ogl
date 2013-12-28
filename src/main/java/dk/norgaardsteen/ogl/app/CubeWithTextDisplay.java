@@ -98,11 +98,11 @@ public class CubeWithTextDisplay extends Base {
   private final Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
   private final Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
 
-  private final static String FONT_TEXTURE_ATLAS_FILE = "src/main/resources/img/uc0x20_0xff_Liberation Mono_x8_y14.png";
-  private final static String FONT_DESCRIPTION_FILE = "src/main/resources/img/uc0x20_0xff_Liberation Mono_x8_y14.fnt";
+  private final static String FONT_TEXTURE_ATLAS_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x8_y14.png";
+  private final static String FONT_DESCRIPTION_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x8_y14.fnt";
 
   private FontDescription fontDescription = new FontDescription(FONT_DESCRIPTION_FILE);
-  private Collection<TexturedTextTile> texturedTextTiles = Text2D.createTextTiles("123", fontDescription, 0, 0);
+  private Collection<TexturedTextTile> texturedTextTiles = Text2D.createTextTiles("abcdefghij" + "\n" + "klmnopqrstuvwxyz", fontDescription, 0, 0);
 
   @Override
   public void prepareBuffers() {
@@ -257,7 +257,6 @@ public class CubeWithTextDisplay extends Base {
     if (Display.wasResized()) {
       displayHeight = Display.getHeight();
       displayWidth = Display.getWidth();
-//      GL11.glViewport(0, 0, displayWidth, displayHeight);
     }
 
     while (Keyboard.next()) {
@@ -392,6 +391,15 @@ public class CubeWithTextDisplay extends Base {
         throw new RuntimeException("Unknown uniform location name: " + uniformLocation.name);
       }
     }
+
+  }
+
+  @Override
+  public void prepareShaders() {
+    GL20.glUseProgram((programsLinked.get(1)).programHandle);
+    GL20.glUniform1i(displayWidthUniformLocationHandle, displayWidth);
+    GL20.glUniform1i(getDisplayHeightUniformLocationHandle, displayHeight);
+    GL20.glUseProgram(0);
   }
 
   @Override
@@ -422,11 +430,6 @@ public class CubeWithTextDisplay extends Base {
     // render text
 
     GL20.glUseProgram((programsLinked.get(1)).programHandle);
-
-    /*
-    GL20.glUniform1i(displayWidthUniformLocationHandle, displayWidth);
-    GL20.glUniform1i(getDisplayHeightUniformLocationHandle, displayHeight);
-    */
 
     GL13.glActiveTexture(GL13.GL_TEXTURE0);
     GL11.glBindTexture(GL11.GL_TEXTURE_2D, fontTextureHandle);
