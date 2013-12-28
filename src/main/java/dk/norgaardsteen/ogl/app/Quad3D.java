@@ -46,6 +46,8 @@ public class Quad3D extends Base {
   protected int verticesVBOHandle;
   protected int colorVBOHandle;
 
+  private int[] programIDs;
+
   protected int projectionMatrixUniformLocationHandle;
   protected int viewMatrixUniformLocationHandle;
   protected int modelMatrixUniformLocationHandle;
@@ -167,21 +169,21 @@ public class Quad3D extends Base {
     Matrix4f.rotate((float)Math.toRadians(modelRotation.y), Y_AXIS, modelMatrix, modelMatrix);
     Matrix4f.rotate((float)Math.toRadians(modelRotation.x), X_AXIS, modelMatrix, modelMatrix);
 
-    GL20.glUseProgram(programID);
+//    GL20.glUseProgram(programIDs[0]);
 
     projectionMatrix.store(matrix4fBuffer);
     matrix4fBuffer.flip();
-    GL20.glUniformMatrix4(projectionMatrixUniformLocationHandle, false, matrix4fBuffer);
+//    GL20.glUniformMatrix4(projectionMatrixUniformLocationHandle, false, matrix4fBuffer);
 
     viewMatrix.store(matrix4fBuffer);
     matrix4fBuffer.flip();
-    GL20.glUniformMatrix4(viewMatrixUniformLocationHandle, false, matrix4fBuffer);
+//    GL20.glUniformMatrix4(viewMatrixUniformLocationHandle, false, matrix4fBuffer);
 
     modelMatrix.store(matrix4fBuffer);
     matrix4fBuffer.flip();
-    GL20.glUniformMatrix4(modelMatrixUniformLocationHandle, false, matrix4fBuffer);
+//    GL20.glUniformMatrix4(modelMatrixUniformLocationHandle, false, matrix4fBuffer);
 
-    GL20.glUseProgram(0);
+//    GL20.glUseProgram(0);
   }
 
   @Override
@@ -275,14 +277,15 @@ public class Quad3D extends Base {
   }
 
   @Override
-  public int[] prepareShaders() {
-    int vertexShaderHandle = ShaderCompiler.loadAndCompileShader(VERTEX_SHADER_FILE, GL20.GL_VERTEX_SHADER);
-    int fragmentShaderHandle = ShaderCompiler.loadAndCompileShader(FRAGMENT_SHADER_FILE, GL20.GL_FRAGMENT_SHADER);
-    return new int[]{vertexShaderHandle, fragmentShaderHandle};
+  public void beforeRender() {
+
   }
 
   @Override
-  public int prepareProgram(int[] shaderHandles) {
+  public void prepareProgram() {
+    int vertexShaderHandle = ShaderCompiler.loadAndCompileShader(VERTEX_SHADER_FILE, GL20.GL_VERTEX_SHADER);
+    int fragmentShaderHandle = ShaderCompiler.loadAndCompileShader(FRAGMENT_SHADER_FILE, GL20.GL_FRAGMENT_SHADER);
+
     List<AttribLocation> attribLocationList = new ArrayList<AttribLocation>(2);
     AttribLocation inPositionAttribLocation = new AttribLocation(0, "in_position");
     AttribLocation inColorAttribLocation = new AttribLocation(1, "in_color");
@@ -297,9 +300,9 @@ public class Quad3D extends Base {
     uniformLocationList.add(viewMatrixUniformLocation);
     uniformLocationList.add(modelMatrixUniformLocation);
 
-    ProgramLinkerResult programLinkerResult = ProgramLinker.link(shaderHandles, attribLocationList, uniformLocationList);
+    ProgramLinkerResult programLinkerResult = ProgramLinker.link(new int[]{vertexShaderHandle, fragmentShaderHandle}, attribLocationList, uniformLocationList);
 
-    for(UniformLocation uniformLocation : programLinkerResult.uniformLocations) {
+    for(UniformLocation uniformLocation : programLinkerResult.getUniformLocations()) {
       if (uniformLocation.name.equals(UniformLocation.PROJECTION_MATRIX_UNIFORM_LOCATION_NAME)) {
         projectionMatrixUniformLocationHandle = uniformLocation.handle;
       } else if (uniformLocation.name.equals(UniformLocation.VIEW_MATRIX_UNIFORM_LOCATION_NAME)) {
@@ -310,7 +313,7 @@ public class Quad3D extends Base {
         throw new RuntimeException("Unknown uniform location name: " + uniformLocation.name);
     }
 
-    return programLinkerResult.programHandle;
+    programIDs = new int[]{programLinkerResult.programHandle};
   }
 
   @Override
@@ -318,14 +321,18 @@ public class Quad3D extends Base {
     // Clear The Screen And The Depth Buffer
     GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 
-    GL20.glUseProgram(programID);
+    GL20.glUseProgram(programIDs[0]);
+
+    GL20.glUniformMatrix4(projectionMatrixUniformLocationHandle, false, matrix4fBuffer);
+    GL20.glUniformMatrix4(viewMatrixUniformLocationHandle, false, matrix4fBuffer);
+    GL20.glUniformMatrix4(modelMatrixUniformLocationHandle, false, matrix4fBuffer);
 
     // enable the VAO
     GL30.glBindVertexArray(vaoHandle);
     GL20.glEnableVertexAttribArray(0);
     GL20.glEnableVertexAttribArray(1);
-    // draw the shape:
-    // 1: type of shape to draw
+    // createTextTiles the shape:
+    // 1: type of shape to createTextTiles
     // 2: start index of the vertex array
     // 3: number of values for each vertex
     GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, shape.vertices().length / shape.vertexPositionElementCount());
@@ -381,7 +388,7 @@ public class Quad3D extends Base {
     System.out.println("Cleaned up.");
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws LWJGLException {
     Quad3D fun = new Quad3D();
     fun.start();
     fun.stop();

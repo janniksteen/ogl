@@ -25,13 +25,13 @@ public class Vertex {
   // The total size of a vertex in bytes
   public static final int TOTAL_SIZE_IN_BYTES = ELEMENT_BYTES * TOTAL_ELEMENT_COUNT;
 
-  public Vertex setXYZ(float x, float y, float z) {
-    this.setXYZW(x, y, z, 1f);
+  public Vertex setXY(float x, float y) {
+    this.setXYZW(x, y, 0f, 1f);
     return this;
   }
 
-  public Vertex setXYZ(float[] xyz) {
-    this.setXYZ(xyz[0], xyz[1], xyz[2]);
+  public Vertex setXYZ(float x, float y, float z) {
+    this.setXYZW(x, y, z, 1f);
     return this;
   }
 
@@ -50,18 +50,8 @@ public class Vertex {
     return this;
   }
 
-  public Vertex setXYZW(float[] xyzw) {
-    this.setXYZW(xyzw[0], xyzw[1], xyzw[2], xyzw[3]);
-    return this;
-  }
-
   public Vertex setRGBA(float r, float g, float b, float a) {
     this.rgba = new float[] {r, g, b, 1f};
-    return this;
-  }
-
-  public Vertex setRGBA(float[] rgba) {
-    this.setRGBA(rgba[0], rgba[1], rgba[2], rgba[3]);
     return this;
   }
 
@@ -70,9 +60,8 @@ public class Vertex {
     return this;
   }
 
-  public Vertex setST(float[] st) {
-    this.setST(st[0], st[1]);
-    return this;
+  public float[] getXY() {
+    return new float[] {this.xyzw[0], this.xyzw[1]};
   }
 
   public float[] getXYZW() {

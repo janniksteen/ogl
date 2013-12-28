@@ -1,11 +1,11 @@
 package dk.norgaardsteen.ogl.shader;
 
-import dk.norgaardsteen.ogl.shader.shared.UniformLocation;
 import dk.norgaardsteen.ogl.shader.shared.AttribLocation;
+import dk.norgaardsteen.ogl.shader.shared.UniformLocation;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  * User: jns
@@ -14,17 +14,25 @@ import java.util.List;
  */
 public class ProgramLinker {
 
-  public static ProgramLinkerResult link(int[] shaderHandles, List<AttribLocation> attribLocations, List<UniformLocation> uniformLocations) {
+  public static ProgramLinkerResult link(int[] shaderHandles, Collection<AttribLocation> attribLocations, Collection<UniformLocation> uniformLocations) {
+    ProgramLinkerResult programLinkerResult = new ProgramLinkerResult();
     int programHandle = GL20.glCreateProgram();
     System.out.println("Created program.");
+
     for (int i = 0; i < shaderHandles.length; i++) {
       GL20.glAttachShader(programHandle, shaderHandles[i]);
+      programLinkerResult.addShaderHandle(shaderHandles[i]);
     }
-    for (AttribLocation attribLocation : attribLocations) {
-      GL20.glBindAttribLocation(programHandle, attribLocation.idx, attribLocation.name);
+
+    if (attribLocations != null) {
+      for (AttribLocation attribLocation : attribLocations) {
+        GL20.glBindAttribLocation(programHandle, attribLocation.idx, attribLocation.name);
+      }
     }
+
     GL20.glLinkProgram(programHandle);
     GL20.glValidateProgram(programHandle);
+
     int linkStatus = GL20.glGetProgrami(programHandle, GL20.GL_LINK_STATUS);
     if (linkStatus == GL11.GL_FALSE) {
       int infoLogLength = GL20.glGetProgrami(programHandle, GL20.GL_INFO_LOG_LENGTH);
@@ -34,15 +42,13 @@ public class ProgramLinker {
       System.out.println("Program linked OK.");
     }
 
-    for (UniformLocation uniformLocation : uniformLocations) {
-      uniformLocation.handle = GL20.glGetUniformLocation(programHandle, uniformLocation.name);
+    if (uniformLocations != null) {
+      for (UniformLocation uniformLocation : uniformLocations) {
+        uniformLocation.handle = GL20.glGetUniformLocation(programHandle, uniformLocation.name);
+        programLinkerResult.addUniformLocation(uniformLocation);
+      }
     }
-
-    // clean up
-    for (int i = 0; i < shaderHandles.length; i++) {
-      GL20.glDeleteShader(shaderHandles[i]);
-    }
-
-    return new ProgramLinkerResult(programHandle, uniformLocations);
+    programLinkerResult.setProgramHandle(programHandle);
+    return programLinkerResult;
   }
 }

@@ -6,7 +6,8 @@ import org.kohsuke.args4j.Option;
 
 import javax.imageio.ImageIO;
 import java.awt.Font;
-import java.awt.Graphics2D;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
 import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -34,16 +35,14 @@ public class FontBitMapper {
   private static List<String> avaliableFontNames;
 
   // unicode basic latin1
-  private static int unicodeStart = 0x0020;
-  private static int unicodeEnd = 0x00ff;
+  private static int unicodePointStart = 0x0020;
+  private static int unicodePointEnd = 0x00ff;
+
+  private static int ATLAS_DIM = 16;
 
   private List<Integer> displayableGlyphs;
 
-  private static final int GLYPH_TILE_DIMENSION_X = 10;
-  private static final int GLYPH_TILE_DIMENSION_Y = 14;
-  private static final int GLYPH_PADDING_X = 2;
-  private static final int GLYPH_PADDING_Y = 6;
-  private static final int ATLAS_DIMENSION = 16;
+  private static final String FILE_HEAD_COMMENT = "# line layout: unicode, glyph atlas x pos, glyph atlas y pos, glyph x size, glyph y size, baseline offset";
 
   @Option(name = "-list", usage = "List all font names that can be used by this utility.")
   private boolean listAllFonts;
@@ -56,12 +55,12 @@ public class FontBitMapper {
 
   public void createFont(String name, int style, int size) {
     Font font = new Font(name, style, size);
-    System.out.println("Using font: " + font.getName() + " (num glyphs: " + font.getNumGlyphs() + ")");
+    System.out.println("Using font: " + font.getName() + " " + font.getSize() + " (num glyphs: " + font.getNumGlyphs() +")");
 
     // filter out avaliable glyphs
     displayableGlyphs = new ArrayList<Integer>();
     int discard = 0;
-    for (int unicode = unicodeStart; unicode <= unicodeEnd; unicode++) {
+    for (int unicode = unicodePointStart; unicode <= unicodePointEnd; unicode++) {
       if (font.canDisplay(unicode)) {
         displayableGlyphs.add(new Integer(unicode));
       } else {
@@ -77,44 +76,64 @@ public class FontBitMapper {
     System.out.println("Avaliable glyphs: " + glyphs.toString());
     System.out.println("Discarded " + discard + " as not avaliable in this font selection.");
 
-    String fileBaseName = outputDirectory + "/uc0x" + Integer.toHexString(unicodeStart) + "_0x" + Integer.toHexString(unicodeEnd) + "_" + font.getName() + "_x" + GLYPH_TILE_DIMENSION_X + "_y" + GLYPH_TILE_DIMENSION_Y;
+    BufferedImage fontImage = new BufferedImage(1,1, BufferedImage.TYPE_INT_ARGB);
+    Graphics fontGraphics = fontImage.getGraphics();
+    fontGraphics.setFont(font);
+    FontMetrics fontMetrics = fontGraphics.getFontMetrics(font);
+
+    int tileHeight = fontMetrics.getHeight();
+    int tileWidth = fontMetrics.getMaxAdvance();
+
+    String fileBaseName = outputDirectory + "/uc0x" + Integer.toHexString(unicodePointStart) + "_0x" + Integer.toHexString(unicodePointEnd) + "_" + font.getName() + "_x" + tileWidth + "_y" + tileHeight;
     String atlasDescriptionFileName = fileBaseName + ".fnt";
     PrintWriter descriptionWriter = null;
     try {
       descriptionWriter = new PrintWriter(new File(atlasDescriptionFileName));
-      descriptionWriter.println("# unicode, glyph atlas x pos, glyph atlas y pos, glyph x size, glyph y size, y offset");
+      descriptionWriter.println(FILE_HEAD_COMMENT);
+      descriptionWriter.print(FontDescription.ATLAS_DIM_KEY);
+      descriptionWriter.print(ATLAS_DIM * tileWidth);
+      descriptionWriter.print(",");
+      descriptionWriter.println(ATLAS_DIM * tileHeight);
     } catch (FileNotFoundException e) {
       System.err.println("Could not open font description file " + atlasDescriptionFileName);
       System.exit(-1);
     }
-    BufferedImage atlas = new BufferedImage((ATLAS_DIMENSION * GLYPH_TILE_DIMENSION_X), (ATLAS_DIMENSION * GLYPH_TILE_DIMENSION_Y), BufferedImage.TYPE_INT_ARGB);
-    for (int atlasRow = 0; atlasRow < ATLAS_DIMENSION; atlasRow++) {
-      for (int atlasCol = 0; atlasCol < ATLAS_DIMENSION; atlasCol++) {
-        int glyphPos = (atlasRow * ATLAS_DIMENSION) + atlasCol;
-        Graphics2D atlasGraphics = atlas.createGraphics();
-        int atlasPosX = (atlasCol * GLYPH_TILE_DIMENSION_X) + GLYPH_PADDING_X;
-        int atlasPosY = (atlasRow * GLYPH_TILE_DIMENSION_Y) + GLYPH_TILE_DIMENSION_Y / 2 + GLYPH_PADDING_Y;
-        if (glyphPos < glyphs.length()) {
-          char c = glyphs.charAt(glyphPos);
-          atlasGraphics.drawString(Character.toString(c), atlasPosX, atlasPosY);
-          descriptionWriter.print((int) c);
-          descriptionWriter.print(",");
-          descriptionWriter.print(atlasCol * GLYPH_TILE_DIMENSION_X);
-          descriptionWriter.print(",");
-          descriptionWriter.print(atlasRow * GLYPH_TILE_DIMENSION_Y);
-          descriptionWriter.print(",");
-          descriptionWriter.print(GLYPH_TILE_DIMENSION_X);
-          descriptionWriter.print(",");
-          descriptionWriter.print(GLYPH_TILE_DIMENSION_Y);
-          descriptionWriter.print(",");
-          descriptionWriter.println("0"); // y-offset: relative amount to move the glyph down to align in a common baseline
-        } else {
-          atlasGraphics.drawBytes(new byte[]{0, 0, 0, 0}, 0, 4, atlasPosX, atlasPosY);
-        }
-        atlasGraphics.dispose();
+
+    BufferedImage atlas = new BufferedImage(ATLAS_DIM * tileWidth, ATLAS_DIM * tileHeight, BufferedImage.TYPE_INT_ARGB);
+    Graphics atlasGraphics = atlas.getGraphics();
+    atlasGraphics.setFont(font);
+    fontMetrics = atlasGraphics.getFontMetrics(font);
+
+    int drawXPos = 0;
+    int drawYPos = 0;
+
+    for (int cursor = 0; cursor < glyphs.length(); cursor++) {
+      char c = glyphs.charAt(cursor);
+      int glyphXsize = fontMetrics.stringWidth(new String(new char[]{c}));
+      int glyphYsize = tileHeight;
+
+      atlasGraphics.drawString(Character.toString(c), drawXPos, fontMetrics.getMaxAscent() + drawYPos);
+
+      descriptionWriter.print((int) c);
+      descriptionWriter.print(",");
+      descriptionWriter.print(drawXPos);
+      descriptionWriter.print(",");
+      descriptionWriter.print(drawYPos);
+      descriptionWriter.print(",");
+      descriptionWriter.print(glyphXsize);
+      descriptionWriter.print(",");
+      descriptionWriter.print(glyphYsize);
+      descriptionWriter.print(",");
+      descriptionWriter.println("0"); // y-offset: relative amount to move the glyph down to align it to a common glyph baseline
+
+      if ((cursor + 1) % ATLAS_DIM == 0) {
+        drawXPos = 0;
+        drawYPos += tileHeight;
+      } else {
+        drawXPos += glyphXsize;
       }
     }
-
+    atlasGraphics.dispose();
     descriptionWriter.flush();
     descriptionWriter.close();
     System.out.println("Wrote: " + atlasDescriptionFileName);

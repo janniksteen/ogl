@@ -1,6 +1,6 @@
 package dk.norgaardsteen.ogl.util;
 
-import de.matthiasmann.twl.utils.PNGDecoder;
+import net.sourceforge.fastpng.PNGDecoder;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -21,25 +21,21 @@ public class PNGLoader {
   }
 
   public static enum Format {
-    ALPHA, LUMINANCE, LUMINANCE_ALPHA, RGB, RGBA, BGRA, ABGR;
+    ALPHA, LUMINANCE, RGB, RGBA, ABGR;
   }
 
   public static PNGResult load(String fileName, Format format) {
-    de.matthiasmann.twl.utils.PNGDecoder.Format pngFormat;
+    PNGDecoder.TextureFormat pngFormat;
     if (format.equals(Format.ABGR)) {
-      pngFormat = PNGDecoder.Format.ABGR;
+      pngFormat = PNGDecoder.TextureFormat.ABGR;
     } else if (format.equals(Format.ALPHA)) {
-      pngFormat = PNGDecoder.Format.ALPHA;
-    } else if (format.equals(Format.BGRA)) {
-      pngFormat = PNGDecoder.Format.BGRA;
+      pngFormat = PNGDecoder.TextureFormat.ALPHA;
     } else if (format.equals(Format.LUMINANCE)) {
-      pngFormat = PNGDecoder.Format.LUMINANCE;
-    } else if (format.equals(Format.LUMINANCE_ALPHA)) {
-      pngFormat = PNGDecoder.Format.LUMINANCE_ALPHA;
+      pngFormat = PNGDecoder.TextureFormat.LUMINANCE;
     } else if (format.equals(Format.RGB)) {
-      pngFormat = PNGDecoder.Format.RGB;
+      pngFormat = PNGDecoder.TextureFormat.RGB;
     } else if (format.equals(Format.RGBA)) {
-      pngFormat = PNGDecoder.Format.RGBA;
+      pngFormat = PNGDecoder.TextureFormat.RGBA;
     } else {
       throw new IllegalArgumentException("Illegal format given.");
     }

@@ -1,6 +1,6 @@
 package dk.norgaardsteen.ogl.mesh;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  * User: jns
@@ -8,6 +8,6 @@ import java.util.List;
  * Time: 4:41 PM
  */
 public interface Shape {
-  public List<Vertex> getVertices();
-  public byte[] getIndices();
+  public Collection<Vertex> getVertices();
+  public short[] getIndices();
 }

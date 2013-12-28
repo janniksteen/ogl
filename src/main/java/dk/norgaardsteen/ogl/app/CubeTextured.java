@@ -30,7 +30,9 @@ import org.lwjgl.util.vector.Vector3f;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.ShortBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -40,26 +42,28 @@ import java.util.List;
  */
 public class CubeTextured extends Base {
 
-  protected static final Vector3f X_AXIS = new Vector3f(1.0f, 0.0f, 0.0f);
-  protected static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
-  protected static final Vector3f Z_AXIS = new Vector3f(0.0f, 0.0f, 1.0f);
+  private static final Vector3f X_AXIS = new Vector3f(1.0f, 0.0f, 0.0f);
+  private static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
+  private static final Vector3f Z_AXIS = new Vector3f(0.0f, 0.0f, 1.0f);
 
-  protected final int displayWidth = 1280;
-  protected final int displayHeight = 720;
+  private final int displayWidth = 1280;
+  private final int displayHeight = 720;
 
-  protected int vaoHandle;
-  protected int vboHandle;
-  protected int vboiHandle;
-  protected int textureHandle;
+  private int vaoHandle;
+  private int vboHandle;
+  private int vboiHandle;
+  private int textureHandle;
 
-  protected int projectionMatrixUniformLocationHandle;
-  protected int viewMatrixUniformLocationHandle;
-  protected int modelMatrixUniformLocationHandle;
+  private int[] programIDs;
 
-  protected final FloatBuffer matrix4fBuffer = BufferUtils.createFloatBuffer(16);
+  private int projectionMatrixUniformLocationHandle;
+  private int viewMatrixUniformLocationHandle;
+  private int modelMatrixUniformLocationHandle;
 
-  protected static final String VERTEX_SHADER_FILE = "src/main/resources/shaders/cube.vsh";
-  protected static final String FRAGMENT_SHADER_FILE = "src/main/resources/shaders/cube.fsh";
+  private final FloatBuffer matrix4fBuffer = BufferUtils.createFloatBuffer(16);
+
+  private static final String VERTEX_SHADER_FILE = "src/main/resources/shaders/cube_textured.vsh";
+  private static final String FRAGMENT_SHADER_FILE = "src/main/resources/shaders/cube_textured.fsh";
 
   private final Shape shape = new Cube();
   private float vertexPositions[];
@@ -79,10 +83,13 @@ public class CubeTextured extends Base {
   private final Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
   private final Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
 
+  private final static String FONT_TEXTURE_ATLAS_FILE = "src/main/resources/img/uc0x20_0xff_Ubuntu Mono_x10_y14.png";
+  private final static String FONT_DESCRIPTION_FILE = "src/main/resources/img/uc0x20_0xff_Ubuntu Mono_x10_y14.fnt";
+
   @Override
   public void prepareBuffers() {
     // convert vertexPositions array to buffer
-    List<Vertex> vertexList = shape.getVertices();
+    Collection<Vertex> vertexList = shape.getVertices();
     FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(vertexList.size() * Vertex.TOTAL_ELEMENT_COUNT);
     FloatArrayList positionFloatArrayList = new FloatArrayList();
     for (Vertex vertex : vertexList) {
@@ -117,7 +124,7 @@ public class CubeTextured extends Base {
     // assign texture coordinates
     GL20.glVertexAttribPointer(2, Vertex.TEXTURE_COORDINATE_ELEMENT_COUNT, GL11.GL_FLOAT, false, stride, textureValueOffset);
 
-    ByteBuffer indicesBuffer = BufferUtils.createByteBuffer(shape.getIndices().length);
+    ShortBuffer indicesBuffer = BufferUtils.createShortBuffer(shape.getIndices().length);
     indicesBuffer.put(shape.getIndices());
     indicesBuffer.flip();
 
@@ -132,7 +139,7 @@ public class CubeTextured extends Base {
 
   @Override
   public void prepareTextures() {
-    PNGLoader.PNGResult pngResult = PNGLoader.load("src/main/resources/img/uc0x20_0xff_Ubuntu Mono_x10_y14.png", PNGLoader.Format.RGBA);
+    PNGLoader.PNGResult pngResult = PNGLoader.load(FONT_TEXTURE_ATLAS_FILE, PNGLoader.Format.RGBA);
     textureHandle = GL11.glGenTextures();
     GL13.glActiveTexture(GL13.GL_TEXTURE0);
     GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureHandle);
@@ -185,7 +192,7 @@ public class CubeTextured extends Base {
     projectionMatrix.m32 = -((2 * near_plane * far_plane) / frustum_length);
     projectionMatrix.m33 = 0;
 
-    GL20.glUseProgram(programID);
+    GL20.glUseProgram(programIDs[0]);
 
     projectionMatrix.store(matrix4fBuffer);
     matrix4fBuffer.flip();
@@ -276,14 +283,15 @@ public class CubeTextured extends Base {
   }
 
   @Override
-  public int[] prepareShaders() {
-    int vertexShaderHandle = ShaderCompiler.loadAndCompileShader(VERTEX_SHADER_FILE, GL20.GL_VERTEX_SHADER);
-    int fragmentShaderHandle = ShaderCompiler.loadAndCompileShader(FRAGMENT_SHADER_FILE, GL20.GL_FRAGMENT_SHADER);
-    return new int[]{vertexShaderHandle, fragmentShaderHandle};
+  public void beforeRender() {
+    prepareMatrices();
   }
 
   @Override
-  public int prepareProgram(int[] shaderHandles) {
+  public void prepareProgram() {
+    int vertexShaderHandle = ShaderCompiler.loadAndCompileShader(VERTEX_SHADER_FILE, GL20.GL_VERTEX_SHADER);
+    int fragmentShaderHandle = ShaderCompiler.loadAndCompileShader(FRAGMENT_SHADER_FILE, GL20.GL_FRAGMENT_SHADER);
+
     List<AttribLocation> attribLocationList = new ArrayList<AttribLocation>(3);
     AttribLocation inPositionAttribLocation = new AttribLocation(0, "in_position");
     AttribLocation inColorAttribLocation = new AttribLocation(1, "in_color");
@@ -300,9 +308,9 @@ public class CubeTextured extends Base {
     uniformLocationList.add(viewMatrixUniformLocation);
     uniformLocationList.add(modelMatrixUniformLocation);
 
-    ProgramLinkerResult programLinkerResult = ProgramLinker.link(shaderHandles, attribLocationList, uniformLocationList);
+    ProgramLinkerResult programLinkerResult = ProgramLinker.link(new int[]{vertexShaderHandle, fragmentShaderHandle}, attribLocationList, uniformLocationList);
 
-    for(UniformLocation uniformLocation : programLinkerResult.uniformLocations) {
+    for(UniformLocation uniformLocation : programLinkerResult.getUniformLocations()) {
       if (uniformLocation.name.equals(UniformLocation.PROJECTION_MATRIX_UNIFORM_LOCATION_NAME)) {
         projectionMatrixUniformLocationHandle = uniformLocation.handle;
       } else if (uniformLocation.name.equals(UniformLocation.VIEW_MATRIX_UNIFORM_LOCATION_NAME)) {
@@ -313,7 +321,7 @@ public class CubeTextured extends Base {
         throw new RuntimeException("Unknown uniform location name: " + uniformLocation.name);
     }
 
-    return programLinkerResult.programHandle;
+    programIDs = new int[]{programLinkerResult.programHandle};
   }
 
   @Override
@@ -321,7 +329,7 @@ public class CubeTextured extends Base {
     // Clear The Screen And The Depth Buffer
     GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 
-    GL20.glUseProgram(programID);
+    GL20.glUseProgram(programIDs[0]);
 
     // bind texture
     GL13.glActiveTexture(GL13.GL_TEXTURE0);
@@ -333,8 +341,8 @@ public class CubeTextured extends Base {
     GL20.glEnableVertexAttribArray(1);
     GL20.glEnableVertexAttribArray(2);
     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, vboiHandle);
-    // draw the shape:
-    // 1: type of shape to draw
+    // createTextTiles the shape:
+    // 1: type of shape to createTextTiles
     // 2: start index of the vertex array
     // 3: number of values for each vertex
     GL11.glDrawElements(GL11.GL_TRIANGLES, shape.getIndices().length, GL11.GL_UNSIGNED_BYTE, 0);
@@ -384,9 +392,10 @@ public class CubeTextured extends Base {
     }
   }
 
-  protected void cleanup() {
+  public void cleanup() {
     GL20.glDisableVertexAttribArray(0);
     GL20.glDisableVertexAttribArray(1);
+    GL20.glDisableVertexAttribArray(2);
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     GL15.glDeleteBuffers(vboHandle);
     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -394,11 +403,11 @@ public class CubeTextured extends Base {
     GL30.glBindVertexArray(0);
     GL30.glDeleteVertexArrays(vaoHandle);
     GL11.glDeleteTextures(textureHandle);
-    GL20.glDeleteProgram(programID);
+    GL20.glDeleteProgram(programIDs[0]);
     System.out.println("Cleaned up.");
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws LWJGLException {
     CubeTextured fun = new CubeTextured();
     fun.start();
     fun.stop();

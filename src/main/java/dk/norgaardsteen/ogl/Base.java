@@ -1,8 +1,11 @@
 package dk.norgaardsteen.ogl;
 
+import org.lwjgl.LWJGLException;
 import org.lwjgl.Sys;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL20;
+
+import java.util.Collection;
 
 /**
  * User: jns
@@ -13,22 +16,22 @@ public abstract class Base implements Lifecycle {
   protected int fps;
   protected long lastFrame;
   protected long lastFPS;
-  protected int programID;
 
-  public void start() {
+  public void start() throws LWJGLException {
     System.out.println("Started.");
     init();
-    programID = prepareProgram(prepareShaders());
+    prepareProgram();
     prepareBuffers();
     prepareTextures();
+    prepareMatrices();
     getDelta();
     lastFPS = getTime();
     while (!Display.isCloseRequested()) {
       input();
-      prepareMatrices();
+      beforeRender();
       render();
       updateFPS();
-      Display.sync(60); // cap fps to 60fps
+      //Display.sync(60); // cap fps to 60fps
       Display.update();
     }
   }
@@ -36,9 +39,7 @@ public abstract class Base implements Lifecycle {
   protected abstract void cleanup();
 
   public void stop() {
-    GL20.glUseProgram(0);
     cleanup();
-    GL20.glDeleteProgram(programID);
     Display.destroy();
     System.out.println("Stopped.");
   }
