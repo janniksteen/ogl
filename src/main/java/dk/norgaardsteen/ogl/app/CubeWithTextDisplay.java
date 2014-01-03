@@ -6,6 +6,7 @@ import dk.norgaardsteen.ogl.math.Trigonometric;
 import dk.norgaardsteen.ogl.mesh.Cube;
 import dk.norgaardsteen.ogl.mesh.Shape;
 import dk.norgaardsteen.ogl.mesh.Vertex;
+import dk.norgaardsteen.ogl.resource.ApplicationContext;
 import dk.norgaardsteen.ogl.shader.ProgramLinker;
 import dk.norgaardsteen.ogl.shader.ProgramLinkerResult;
 import dk.norgaardsteen.ogl.shader.ShaderCompiler;
@@ -26,10 +27,10 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.PixelFormat;
-import org.lwjgl.util.glu.GLU;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
+import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
@@ -52,21 +53,21 @@ public class CubeWithTextDisplay extends Base {
 
   private List<ProgramLinkerResult> programsLinked = new ArrayList<ProgramLinkerResult>();
 
-  private int cubeVAOHandle;
-  private int cubeVBOHandle;
-  private int cubeVBOIndicesHandle;
+  private int cubeVAOHandle = 0;
+  private int cubeVBOHandle = 0;
+  private int cubeVBOIndicesHandle = 0;
 
-  private int fontTextureHandle;
-  private int textTilesVAOHandle;
-  private int textTilesVBOHandle;
-  private int textTilesVBOIndicesHandle;
+  private int fontTextureHandle = 0;
+  private int textTilesVAOHandle = 0;
+  private int textTilesVBOHandle = 0;
+  private int textTilesVBOIndicesHandle = 0;
 
-  private int projectionMatrixUniformLocationHandle;
-  private int viewMatrixUniformLocationHandle;
-  private int modelMatrixUniformLocationHandle;
-  private int fontTextureUniformLocationHandle;
-  private int displayWidthUniformLocationHandle;
-  private int getDisplayHeightUniformLocationHandle;
+  private int textTilesIndicesCount = 0;
+
+  private int projectionMatrixUniformLocationHandle = 0;
+  private int viewMatrixUniformLocationHandle = 0;
+  private int modelMatrixUniformLocationHandle = 0;
+  private int fontTextureUniformLocationHandle = 0;
 
   private Matrix4f modelMatrix;
   private Matrix4f viewMatrix;
@@ -82,11 +83,11 @@ public class CubeWithTextDisplay extends Base {
 
   private final Shape cube = new Cube();
 
-  private Vector3f modelScale = new Vector3f(0.5f, 0.5f, 0.0f);
+  private Vector3f modelScale = new Vector3f(0.5f, 0.5f, 0.5f);
   private Vector3f modelPosition = new Vector3f(0.0f, 0.0f, 0.0f);
-  private Vector3f modelRotation = new Vector3f(0.0f, 0.0f, 0.0f);
+  private Vector3f modelRotation = new Vector3f(20.0f, 40.0f, 10.0f);
 
-  private Vector3f viewPosition = new Vector3f(0.0f, 0.0f, -1.0f);
+  private Vector3f viewPosition = new Vector3f(0.0f, 0.0f, -1.5f);
   private float viewPositionDelta = -0.05f;
 
   private float fieldOfView = 67.0f;
@@ -98,15 +99,20 @@ public class CubeWithTextDisplay extends Base {
   private final Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
   private final Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
 
-  private final static String FONT_TEXTURE_ATLAS_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x8_y14.png";
-  private final static String FONT_DESCRIPTION_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x8_y14.fnt";
+  private final static String FONT_TEXTURE_ATLAS_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x6_y12.png";
+  private final static String FONT_DESCRIPTION_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x6_y12.fnt";
 
   private FontDescription fontDescription = new FontDescription(FONT_DESCRIPTION_FILE);
-  private Collection<TexturedTextTile> texturedTextTiles = Text2D.createTextTiles("abcdefghij" + "\n" + "klmnopqrstuvwxyz", fontDescription, 0, 0);
+
+  private boolean alphaBlend = true;
+  private boolean showStats = true;
+
+  private boolean subTextTileData = false;
+  private boolean subTextTileIndices = false;
 
   @Override
   public void prepareBuffers() {
-    // handle cube
+    // cube buffers
     Collection<Vertex> vertexList = cube.getVertices();
     FloatBuffer cubeModelBuffer = BufferUtils.createFloatBuffer(vertexList.size() * Vertex.TOTAL_ELEMENT_COUNT);
     for (Vertex vertex : vertexList) {
@@ -114,6 +120,14 @@ public class CubeWithTextDisplay extends Base {
       cubeModelBuffer.put(vertex.getRGBA());
     }
     cubeModelBuffer.flip();
+
+    ShortBuffer cubeIndicesBuffer = BufferUtils.createShortBuffer(cube.getIndices().length);
+    cubeIndicesBuffer.put(cube.getIndices());
+    cubeIndicesBuffer.flip();
+
+    cubeVBOIndicesHandle = GL15.glGenBuffers();
+    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cubeVBOIndicesHandle);
+    GL15.glBufferData(GL15.GL_ARRAY_BUFFER, cubeIndicesBuffer, GL15.GL_STATIC_DRAW);
 
     cubeVBOHandle = GL15.glGenBuffers();
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cubeVBOHandle);
@@ -135,37 +149,13 @@ public class CubeWithTextDisplay extends Base {
     // assign colors
     GL20.glVertexAttribPointer(1, Vertex.COLOR_ELEMENT_COUNT, GL11.GL_FLOAT, false, stride, colorValuesByteOffset);
 
-    ShortBuffer cubeIndicesBuffer = BufferUtils.createShortBuffer(cube.getIndices().length);
-    cubeIndicesBuffer.put(cube.getIndices());
-    cubeIndicesBuffer.flip();
-
-    cubeVBOIndicesHandle = GL15.glGenBuffers();
-    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cubeVBOIndicesHandle);
-    GL15.glBufferData(GL15.GL_ARRAY_BUFFER, cubeIndicesBuffer, GL15.GL_STATIC_DRAW);
-
-    // unbind!
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     GL30.glBindVertexArray(0);
 
-    // handle 2D text
-    FloatBuffer textTileBuffer = BufferUtils.createFloatBuffer(TexturedTextTile.TOTAL_ELEMENT_COUNT * TexturedTextTile.TOTAL_VERTICES_COUNT * texturedTextTiles.size());
-    ShortBuffer textTileIndicesBuffer = BufferUtils.createShortBuffer(TexturedTextTile.INDICES_ELEMENT_COUNT * texturedTextTiles.size());
-
-    for (TexturedTextTile texturedTextTile : texturedTextTiles) {
-      for (Vertex vertex : texturedTextTile.getVertices()) {
-        textTileBuffer.put(vertex.getXY());
-        textTileBuffer.put(vertex.getST());
-      }
-      textTileIndicesBuffer.put(texturedTextTile.getIndices());
-      System.out.println(texturedTextTile);
-    }
-
-    textTileBuffer.flip();
-    textTileIndicesBuffer.flip();
-
+    // text buffers
+    textTilesVBOIndicesHandle = GL15.glGenBuffers();
     textTilesVBOHandle = GL15.glGenBuffers();
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, textTilesVBOHandle);
-    GL15.glBufferData(GL15.GL_ARRAY_BUFFER, textTileBuffer, GL15.GL_STATIC_DRAW);
 
     textTilesVAOHandle = GL30.glGenVertexArrays();
     GL30.glBindVertexArray(textTilesVAOHandle);
@@ -176,14 +166,8 @@ public class CubeWithTextDisplay extends Base {
     GL20.glVertexAttribPointer(0, TexturedTextTile.VERTEX_ELEMENT_COUNT, GL11.GL_FLOAT, false, strideTextTiles, 0);
     GL20.glVertexAttribPointer(1, TexturedTextTile.ST_ELEMENT_COUNT, GL11.GL_FLOAT, false, strideTextTiles, textTileTextureValueOffset);
 
-    textTilesVBOIndicesHandle = GL15.glGenBuffers();
-    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, textTilesVBOIndicesHandle);
-    GL15.glBufferData(GL15.GL_ARRAY_BUFFER, textTileIndicesBuffer, GL15.GL_STATIC_DRAW);
-
-    // unbind!!
-    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     GL30.glBindVertexArray(0);
-
+    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
   }
 
   @Override
@@ -213,6 +197,10 @@ public class CubeWithTextDisplay extends Base {
 
   @Override
   public void beforeRender() {
+    setProjectionMatrix();
+  }
+
+  private void setProjectionMatrix() {
     // Setup projection matrix
     projectionMatrix = new Matrix4f();
     float aspectRatio = (float)displayWidth / (float)displayHeight;
@@ -321,17 +309,35 @@ public class CubeWithTextDisplay extends Base {
         case Keyboard.KEY_F3:
           viewPosition.z += viewPositionDelta;
           break;
+
         case Keyboard.KEY_F4:
           viewPosition.z -= viewPositionDelta;
           break;
 
+        case Keyboard.KEY_F10:
+          if (alphaBlend) {
+            alphaBlend = false;
+          } else {
+            alphaBlend = true;
+          }
+          break;
+
+        case Keyboard.KEY_F12:
+          if (showStats) {
+            showStats = false;
+          } else {
+            showStats = true;
+          }
+          break;
+
         // reset
         case Keyboard.KEY_ESCAPE:
-          modelScale = new Vector3f(0.5f, 0.5f, 0.0f);
+          modelScale = new Vector3f(0.5f, 0.5f, 0.5f);
           modelPosition = new Vector3f(0.0f, 0.0f, 0.0f);
-          modelRotation = new Vector3f(0.0f, 0.0f, 0.0f);
-          viewPosition = new Vector3f(0.0f, 0.0f, -1.0f);
-          fieldOfView = 45.0f;
+          modelRotation = new Vector3f(20.0f, 40.0f, 10.0f);
+          viewPosition = new Vector3f(0.0f, 0.0f, -1.5f);
+          fieldOfView = 67.0f;
+          prepareMatrices();
           break;
       }
     }
@@ -373,44 +379,21 @@ public class CubeWithTextDisplay extends Base {
     int textVertexShaderHandle = ShaderCompiler.loadAndCompileShader(TEXT2D_VERTEX_SHADER_FILE, GL20.GL_VERTEX_SHADER);
     int textFragmentShaderHandle = ShaderCompiler.loadAndCompileShader(TEXT2D_FRAGMENT_SHADER_FILE, GL20.GL_FRAGMENT_SHADER);
 
-    uniformLocationList = new ArrayList<>(2);
-    UniformLocation displayWidthUniformLocation = new UniformLocation(UniformLocation.DISPLAY_WIDTH_UNIFORM_LOCATION_NAME);
-    UniformLocation displayHeightUniformLocation = new UniformLocation(UniformLocation.DISPLAY_HEIGHT_UNIFORM_LOCATION_NAME);
-    uniformLocationList.add(displayWidthUniformLocation);
-    uniformLocationList.add(displayHeightUniformLocation);
-
-    ProgramLinkerResult textProgramLinkerResult = ProgramLinker.link(new int[]{textVertexShaderHandle, textFragmentShaderHandle}, null, uniformLocationList);
+    ProgramLinkerResult textProgramLinkerResult = ProgramLinker.link(new int[]{textVertexShaderHandle, textFragmentShaderHandle}, null, null);
     programsLinked.add(textProgramLinkerResult);
-
-    for (UniformLocation uniformLocation : textProgramLinkerResult.getUniformLocations()) {
-      if (uniformLocation.name.equals(UniformLocation.DISPLAY_WIDTH_UNIFORM_LOCATION_NAME)) {
-        displayWidthUniformLocationHandle = uniformLocation.handle;
-      } else if (uniformLocation.name.equals(UniformLocation.DISPLAY_HEIGHT_UNIFORM_LOCATION_NAME)) {
-        getDisplayHeightUniformLocationHandle = uniformLocation.handle;
-      } else {
-        throw new RuntimeException("Unknown uniform location name: " + uniformLocation.name);
-      }
-    }
-
   }
 
   @Override
   public void prepareShaders() {
-    GL20.glUseProgram((programsLinked.get(1)).programHandle);
-    GL20.glUniform1i(displayWidthUniformLocationHandle, displayWidth);
-    GL20.glUniform1i(getDisplayHeightUniformLocationHandle, displayHeight);
-    GL20.glUseProgram(0);
   }
 
   @Override
   public void render() {
     // Clear The Screen And The Depth Buffer
     GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-
     // render cube
 
-    GL20.glUseProgram((programsLinked.get(0)).programHandle);
-
+    GL20.glUseProgram(programsLinked.get(0).programHandle);
     GL20.glUniformMatrix4(projectionMatrixUniformLocationHandle, false, matrix4fProjectionBuffer);
     GL20.glUniformMatrix4(viewMatrixUniformLocationHandle, false, matrix4fViewBuffer);
     GL20.glUniformMatrix4(modelMatrixUniformLocationHandle, false, matrix4fModelBuffer);
@@ -423,40 +406,40 @@ public class CubeWithTextDisplay extends Base {
     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, cubeVBOIndicesHandle);
 
     GL11.glDrawElements(GL11.GL_TRIANGLES, cube.getIndices().length, GL11.GL_UNSIGNED_SHORT, 0);
-
     GL20.glDisableVertexAttribArray(0);
     GL20.glDisableVertexAttribArray(1);
+    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    // render text
+    if (showStats) {
+      GL20.glUseProgram(programsLinked.get(1).programHandle);
+      GL13.glActiveTexture(GL13.GL_TEXTURE0);
+      GL11.glBindTexture(GL11.GL_TEXTURE_2D, fontTextureHandle);
+      GL20.glUniform1i(fontTextureUniformLocationHandle, 0);
 
-    GL20.glUseProgram((programsLinked.get(1)).programHandle);
+      GL30.glBindVertexArray(textTilesVAOHandle);
+      GL20.glEnableVertexAttribArray(0);
+      GL20.glEnableVertexAttribArray(1);
 
-    GL13.glActiveTexture(GL13.GL_TEXTURE0);
-    GL11.glBindTexture(GL11.GL_TEXTURE_2D, fontTextureHandle);
-    GL20.glUniform1i(fontTextureUniformLocationHandle, 0);
+      GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, textTilesVBOHandle);
+      GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, textTilesVBOIndicesHandle);
 
-    // set buffers
-    GL30.glBindVertexArray(textTilesVAOHandle);
-    GL20.glEnableVertexAttribArray(0);
-    GL20.glEnableVertexAttribArray(1);
-    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, textTilesVBOHandle);
-    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, textTilesVBOIndicesHandle);
+      GL11.glDisable(GL11.GL_DEPTH_TEST);
+      if (alphaBlend) {
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_CONSTANT_ALPHA);
+      }
 
-    GL11.glDisable(GL11.GL_DEPTH_TEST);
-    GL11.glEnable(GL11.GL_BLEND);
-    GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_CONSTANT_ALPHA);
+      GL11.glDrawElements(GL11.GL_TRIANGLES, textTilesIndicesCount, GL11.GL_UNSIGNED_SHORT, 0);
 
-    GL11.glDrawElements(GL11.GL_TRIANGLES, TexturedTextTile.INDICES_ELEMENT_COUNT * texturedTextTiles.size(), GL11.GL_UNSIGNED_SHORT, 0);
-
-    GL11.glDisable(GL11.GL_BLEND);
-    GL11.glEnable(GL11.GL_DEPTH_TEST);
-
-    GL20.glDisableVertexAttribArray(0);
-    GL20.glDisableVertexAttribArray(1);
-
-    if(GL11.glGetError() != GL11.GL_NO_ERROR)
-    {
-      throw new RuntimeException("OpenGL error: " + GLU.gluErrorString(GL11.glGetError()));
+      if (alphaBlend) {
+        GL11.glDisable(GL11.GL_BLEND);
+      }
+      GL11.glEnable(GL11.GL_DEPTH_TEST);
+      GL20.glDisableVertexAttribArray(0);
+      GL20.glDisableVertexAttribArray(1);
+      GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+      GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
   }
 
@@ -472,9 +455,9 @@ public class CubeWithTextDisplay extends Base {
       // set up OpenGL to run in forward-compatible mode
       // so that using deprecated functionality will
       // throw an error. This ensures that we are making
-      // use of OpenGL 4.1
+      // use of OpenGL 4.2
       PixelFormat pixelFormat = new PixelFormat();
-      ContextAttribs contextAttributes = new ContextAttribs(4, 1);
+      ContextAttribs contextAttributes = new ContextAttribs(4, 2);
       contextAttributes.withForwardCompatible(true);
       contextAttributes.withProfileCore(true);
       Display.create(pixelFormat, contextAttributes);
@@ -516,6 +499,66 @@ public class CubeWithTextDisplay extends Base {
     GL30.glDeleteVertexArrays(cubeVAOHandle);
     GL30.glDeleteVertexArrays(textTilesVAOHandle);
     System.out.println("Cleaned up.");
+  }
+
+  @Override
+  protected void updateStats(int fps) {
+    if (showStats) {
+      Collection<TexturedTextTile> texturedTextTiles = new ArrayList<>();
+      Collection<TexturedTextTile> fpsTextTiles = Text2D.createTextTiles("fps: " + fps, fontDescription, 0, 0, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), 0);
+      Collection<TexturedTextTile> rotTextTiles = Text2D.createTextTiles("rot [x:" + modelRotation.x + ",y:" + modelRotation.y + ",z:" + modelRotation.z + "]", fontDescription, 0, 14, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size());
+      Collection<TexturedTextTile> fovTextTiles = Text2D.createTextTiles("fov: " + fieldOfView, fontDescription, 0, 28, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size());
+      Collection<TexturedTextTile> posTextTiles = Text2D.createTextTiles("pos [x:" + modelPosition.x + ",y:" + modelPosition.y + "]", fontDescription, 0, 42, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size());
+      Collection<TexturedTextTile> scaleTextTiles = Text2D.createTextTiles("scale [x: " + modelScale.x + ",y:" + modelScale.y + ",z:" + modelScale.z + "]", fontDescription, 0, 56, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size());
+      Collection<TexturedTextTile> vposTextTiles = Text2D.createTextTiles("vpos [x: " + viewPosition.x + ",y:" + viewPosition.y + ",z:" + viewPosition.z + "]", fontDescription, 0, 70, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size());
+
+      texturedTextTiles.addAll(fpsTextTiles);
+      texturedTextTiles.addAll(rotTextTiles);
+      texturedTextTiles.addAll(fovTextTiles);
+      texturedTextTiles.addAll(posTextTiles);
+      texturedTextTiles.addAll(scaleTextTiles);
+      texturedTextTiles.addAll(vposTextTiles);
+
+      int newTextTilesIndicesCount = TexturedTextTile.INDICES_ELEMENT_COUNT * texturedTextTiles.size();
+
+      if (textTilesIndicesCount != newTextTilesIndicesCount) {
+        textTilesIndicesCount = newTextTilesIndicesCount;
+        subTextTileData = false;
+        subTextTileIndices = false;
+      }
+
+      FloatBuffer textTileBuffer = BufferUtils.createFloatBuffer(TexturedTextTile.TOTAL_ELEMENT_COUNT * TexturedTextTile.TOTAL_VERTICES_COUNT * texturedTextTiles.size());
+      ShortBuffer textTileIndicesBuffer = BufferUtils.createShortBuffer(textTilesIndicesCount);
+
+      for (TexturedTextTile texturedTextTile : texturedTextTiles) {
+        for (Vertex vertex : texturedTextTile.getVertices()) {
+          textTileBuffer.put(vertex.getXY());
+          textTileBuffer.put(vertex.getST());
+        }
+        textTileIndicesBuffer.put(texturedTextTile.getIndices());
+      }
+      textTileBuffer.flip();
+      textTileIndicesBuffer.flip();
+
+      // optimization: force to reallocate buffers when number of tiles changes, otherwise just overwrite existing buffers (in GL driver)
+      GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, textTilesVBOHandle);
+      if (subTextTileData) {
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, textTileBuffer);
+      } else {
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, textTileBuffer, GL15.GL_DYNAMIC_DRAW);
+        subTextTileData = true;
+      }
+
+      GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, textTilesVBOIndicesHandle);
+      if (subTextTileIndices) {
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, textTileIndicesBuffer);
+      } else {
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, textTileIndicesBuffer, GL15.GL_DYNAMIC_DRAW);
+        subTextTileIndices = true;
+      }
+
+      GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
   }
 
   public static void main(String[] args) throws LWJGLException {

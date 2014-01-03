@@ -412,6 +412,11 @@ public class CubeTextured extends Base {
     System.out.println("Cleaned up.");
   }
 
+  @Override
+  protected void updateStats(int fps) {
+
+  }
+
   public static void main(String[] args) throws LWJGLException {
     CubeTextured fun = new CubeTextured();
     fun.start();

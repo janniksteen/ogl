@@ -3,9 +3,8 @@ package dk.norgaardsteen.ogl;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.Sys;
 import org.lwjgl.opengl.Display;
-import org.lwjgl.opengl.GL20;
-
-import java.util.Collection;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.glu.GLU;
 
 /**
  * User: jns
@@ -13,9 +12,9 @@ import java.util.Collection;
  * Time: 11:32 AM
  */
 public abstract class Base implements Lifecycle {
-  protected int fps;
-  protected long lastFrame;
+  private int fps;
   protected long lastFPS;
+  protected long lastPosition;
 
   public void start() throws LWJGLException {
     System.out.println("Started.");
@@ -25,19 +24,21 @@ public abstract class Base implements Lifecycle {
     prepareBuffers();
     prepareTextures();
     prepareMatrices();
-    getDelta();
     lastFPS = getTime();
+    lastPosition = getTime();
+
     while (!Display.isCloseRequested()) {
       input();
       beforeRender();
-      render();
       updateFPS();
+      render();
       //Display.sync(60); // cap fps to 60fps
       Display.update();
     }
   }
 
   protected abstract void cleanup();
+  protected abstract void updateStats(int fps);
 
   public void stop() {
     cleanup();
@@ -50,25 +51,27 @@ public abstract class Base implements Lifecycle {
    *
    * @return The system time in milliseconds
    */
-  protected long getTime() {
+  private long getTime() {
     return (Sys.getTime() * 1000) / Sys.getTimerResolution();
   }
 
-  public int getDelta() {
-    long time = getTime();
-    int delta = (int) (time - lastFrame);
-    lastFrame = time;
-    return delta;
-  }
   /**
    * Calculate the FPS and set it in the title bar
    */
-  protected void updateFPS() {
+  private void updateFPS() {
     if (getTime() - lastFPS > 1000) {
-      Display.setTitle("FPS: " + fps);
+      updateStats(fps);
       fps = 0;
       lastFPS += 1000;
     }
     fps++;
+  }
+
+  protected void hhandleErrors() {
+    int glError = GL11.glGetError();
+    if(glError != GL11.GL_NO_ERROR)
+    {
+      throw new RuntimeException("OpenGL error: " + GLU.gluErrorString(glError));
+    }
   }
 }

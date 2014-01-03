@@ -1,4 +1,4 @@
-#version 410
+#version 420
 
 uniform sampler2D font_texture;
 

@@ -393,6 +393,11 @@ public class Quad3D extends Base {
     System.out.println("Cleaned up.");
   }
 
+  @Override
+  protected void updateStats(int fps) {
+
+  }
+
   public static void main(String[] args) throws LWJGLException {
     Quad3D fun = new Quad3D();
     fun.start();

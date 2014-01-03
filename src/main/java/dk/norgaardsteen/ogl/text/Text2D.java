@@ -1,6 +1,8 @@
 package dk.norgaardsteen.ogl.text;
 
 import dk.norgaardsteen.ogl.font.FontDescription;
+import dk.norgaardsteen.ogl.math.Positions;
+import dk.norgaardsteen.ogl.resource.ApplicationContext;
 import org.lwjgl.util.vector.Vector2f;
 
 import java.util.ArrayList;
@@ -13,34 +15,22 @@ import java.util.List;
  */
 public class Text2D {
 
-  public static List<TexturedTextTile> createTextTiles(String text, FontDescription fontDescription) {
-    return createTextTiles(text, fontDescription, 0, 0);
-  }
-
-  public static List<TexturedTextTile> createTextTiles(String text, FontDescription fontDescription, int xPad, int yPad) {
+  public static List<TexturedTextTile> createTextTiles(String text, FontDescription fontDescription, int xPad, int yPad, int displayX, int displayY, int existingTextSize) {
     List<TexturedTextTile> texturedTextTiles = new ArrayList<>();
-    int vertexOffset = 0;
+    int vertexOffset = existingTextSize * 4;
     int tileX = 0;
-    int tileY = 0;
+    int tileY = displayY - yPad;
 
     for (int cursor = 0; cursor < text.length(); cursor++) {
-      System.out.println("Start create text tile");
       int unicode = text.codePointAt(cursor);
       TexturedTextTile texturedTextTile = new TexturedTextTile((char)unicode);
-      System.out.println("char:" + (char)unicode);
       FontDescription.GlyphMeta glyphMeta = fontDescription.getGlyphMeta().get(new Integer(unicode));
-
-      if (unicode == 0x0a) {
-        tileY += glyphMeta.glyphYSize + yPad;
-        tileX = 0;
-        continue;
-      }
 
       // create a character tile
       float leftPos = tileX;
       float rightPos = tileX + glyphMeta.glyphXSize; // x right
-      float bottomPos = tileY; // y bottom
-      float topPos = tileY + glyphMeta.glyphYSize; // y top
+      float bottomPos = tileY - glyphMeta.glyphYSize; // y bottom
+      float topPos = tileY; // y top
 
       // resolve the position of the character texture in the font atlas (texture)
 
@@ -52,18 +42,13 @@ public class Text2D {
       float t_0 = glyphMeta.atlasYPos * atlasYScale; // T=0
       float t_1 = (glyphMeta.atlasYPos + glyphMeta.glyphYSize) * atlasYScale; // T=1
 
-      texturedTextTile.add(new Vector2f(leftPos, topPos), new Vector2f(s_0, t_0)); // left top
-      texturedTextTile.add(new Vector2f(leftPos, bottomPos), new Vector2f(s_0, t_1)); // left bottom
-      texturedTextTile.add(new Vector2f(rightPos, bottomPos), new Vector2f(s_1, t_1)); // right bottom
-      texturedTextTile.add(new Vector2f(rightPos, topPos), new Vector2f(s_1, t_0)); // right top
+      texturedTextTile.add(Positions.translateToClipSpace(leftPos, topPos, displayX, displayY), new Vector2f(s_0, t_0)); // left top
+      texturedTextTile.add(Positions.translateToClipSpace(leftPos, bottomPos, displayX, displayY), new Vector2f(s_0, t_1)); // left bottom
+      texturedTextTile.add(Positions.translateToClipSpace(rightPos, bottomPos, displayX, displayY), new Vector2f(s_1, t_1)); // right bottom
+      texturedTextTile.add(Positions.translateToClipSpace(rightPos, topPos, displayX, displayY), new Vector2f(s_1, t_0)); // right top
 
       texturedTextTile.setIndices(vertexOffset);
-
-      System.out.println("Positions:[x_0=" + leftPos + ",y_0=" + bottomPos + ",x_1=" + rightPos + ",y_1=" + topPos + "]");
-      System.out.println("ST:[s_0=" + s_0 + "," + "s_1=" + s_1 + ",t_0=" + t_0 + ",t_1=" + t_1 + "]");
-
       texturedTextTiles.add(texturedTextTile);
-      System.out.println("End create text tile\n");
 
       tileX += glyphMeta.glyphXSize + xPad;
       vertexOffset += 4;
