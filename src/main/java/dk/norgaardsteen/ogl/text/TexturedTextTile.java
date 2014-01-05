@@ -41,8 +41,8 @@ public class TexturedTextTile extends QuadShape implements Shape {
     vertices.add(new Vertex().setXY(vertex.x, vertex.y).setST(st.x, st.y));
   }
 
-  public void setIndices(int vertexOffset) {
-    super.setIndices(vertexOffset);
+  public void setIndicesCCW(int vertexOffset) {
+    super.setIndicesCCW(vertexOffset);
   }
 
   @Override

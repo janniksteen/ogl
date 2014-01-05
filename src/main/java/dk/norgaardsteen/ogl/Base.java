@@ -14,7 +14,6 @@ import org.lwjgl.util.glu.GLU;
 public abstract class Base implements Lifecycle {
   private int fps;
   protected long lastFPS;
-  protected long lastPosition;
 
   public void start() throws LWJGLException {
     System.out.println("Started.");
@@ -25,7 +24,6 @@ public abstract class Base implements Lifecycle {
     prepareTextures();
     prepareMatrices();
     lastFPS = getTime();
-    lastPosition = getTime();
 
     while (!Display.isCloseRequested()) {
       input();
@@ -59,15 +57,15 @@ public abstract class Base implements Lifecycle {
    * Calculate the FPS and set it in the title bar
    */
   private void updateFPS() {
-    if (getTime() - lastFPS > 1000) {
+    if (getTime() - lastFPS > 200) {
       updateStats(fps);
       fps = 0;
-      lastFPS += 1000;
+      lastFPS += 200;
     }
     fps++;
   }
 
-  protected void hhandleErrors() {
+  protected void handleErrors() {
     int glError = GL11.glGetError();
     if(glError != GL11.GL_NO_ERROR)
     {

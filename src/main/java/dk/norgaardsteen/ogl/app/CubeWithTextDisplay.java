@@ -85,7 +85,7 @@ public class CubeWithTextDisplay extends Base {
 
   private Vector3f modelScale = new Vector3f(0.5f, 0.5f, 0.5f);
   private Vector3f modelPosition = new Vector3f(0.0f, 0.0f, 0.0f);
-  private Vector3f modelRotation = new Vector3f(20.0f, 40.0f, 10.0f);
+  private Vector3f modelRotation = new Vector3f(0.0f, 0.0f, 0.0f);
 
   private Vector3f viewPosition = new Vector3f(0.0f, 0.0f, -1.5f);
   private float viewPositionDelta = -0.05f;
@@ -109,6 +109,8 @@ public class CubeWithTextDisplay extends Base {
 
   private boolean subTextTileData = false;
   private boolean subTextTileIndices = false;
+
+  private boolean wireframe = false;
 
   @Override
   public void prepareBuffers() {
@@ -243,8 +245,9 @@ public class CubeWithTextDisplay extends Base {
   @Override
   public void input() {
     if (Display.wasResized()) {
-      displayHeight = Display.getHeight();
       displayWidth = Display.getWidth();
+      displayHeight = Display.getHeight();
+      GL11.glViewport(0, 0, displayWidth, displayHeight);
     }
 
     while (Keyboard.next()) {
@@ -254,12 +257,24 @@ public class CubeWithTextDisplay extends Base {
       }
 
       switch (Keyboard.getEventKey()) {
-        // Move
+        // Position
         case Keyboard.KEY_UP:
           modelPosition.y += positionDelta;
           break;
         case Keyboard.KEY_DOWN:
           modelPosition.y -= positionDelta;
+          break;
+        case Keyboard.KEY_LEFT:
+          modelPosition.x -= positionDelta;
+          break;
+        case Keyboard.KEY_RIGHT:
+          modelPosition.x += positionDelta;
+          break;
+        case Keyboard.KEY_HOME:
+          modelPosition.z += positionDelta;
+          break;
+        case Keyboard.KEY_END:
+          modelPosition.z -= positionDelta;
           break;
 
         // Scale
@@ -271,10 +286,10 @@ public class CubeWithTextDisplay extends Base {
           break;
 
         // Z rotation
-        case Keyboard.KEY_LEFT:
+        case Keyboard.KEY_Q:
           modelRotation.z += rotationDelta;
           break;
-        case Keyboard.KEY_RIGHT:
+        case Keyboard.KEY_E:
           modelRotation.z -= rotationDelta;
           break;
 
@@ -314,6 +329,14 @@ public class CubeWithTextDisplay extends Base {
           viewPosition.z -= viewPositionDelta;
           break;
 
+        case Keyboard.KEY_F9:
+          if (wireframe) {
+            wireframe = false;
+          } else {
+            wireframe = true;
+          }
+          break;
+
         case Keyboard.KEY_F10:
           if (alphaBlend) {
             alphaBlend = false;
@@ -334,7 +357,7 @@ public class CubeWithTextDisplay extends Base {
         case Keyboard.KEY_ESCAPE:
           modelScale = new Vector3f(0.5f, 0.5f, 0.5f);
           modelPosition = new Vector3f(0.0f, 0.0f, 0.0f);
-          modelRotation = new Vector3f(20.0f, 40.0f, 10.0f);
+          modelRotation = new Vector3f(0.0f, 0.0f, 0.0f);
           viewPosition = new Vector3f(0.0f, 0.0f, -1.5f);
           fieldOfView = 67.0f;
           prepareMatrices();
@@ -405,7 +428,14 @@ public class CubeWithTextDisplay extends Base {
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cubeVBOHandle);
     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, cubeVBOIndicesHandle);
 
+    GL11.glFrontFace(GL11.GL_CCW);
+    GL11.glCullFace(GL11.GL_BACK);
+    GL11.glEnable(GL11.GL_CULL_FACE);
+
     GL11.glDrawElements(GL11.GL_TRIANGLES, cube.getIndices().length, GL11.GL_UNSIGNED_SHORT, 0);
+
+    GL11.glDisable(GL11.GL_CULL_FACE);
+
     GL20.glDisableVertexAttribArray(0);
     GL20.glDisableVertexAttribArray(1);
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
@@ -468,6 +498,7 @@ public class CubeWithTextDisplay extends Base {
       // enable z-buffer check
       GL11.glEnable(GL11.GL_DEPTH_TEST);
       GL11.glDepthFunc(GL11.GL_LESS);
+      GL11.glDepthMask(true);
 
     } catch (LWJGLException e) {
       e.printStackTrace();
@@ -508,7 +539,7 @@ public class CubeWithTextDisplay extends Base {
       Collection<TexturedTextTile> fpsTextTiles = Text2D.createTextTiles("fps: " + fps, fontDescription, 0, 0, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), 0);
       Collection<TexturedTextTile> rotTextTiles = Text2D.createTextTiles("rot [x:" + modelRotation.x + ",y:" + modelRotation.y + ",z:" + modelRotation.z + "]", fontDescription, 0, 14, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size());
       Collection<TexturedTextTile> fovTextTiles = Text2D.createTextTiles("fov: " + fieldOfView, fontDescription, 0, 28, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size());
-      Collection<TexturedTextTile> posTextTiles = Text2D.createTextTiles("pos [x:" + modelPosition.x + ",y:" + modelPosition.y + "]", fontDescription, 0, 42, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size());
+      Collection<TexturedTextTile> posTextTiles = Text2D.createTextTiles("pos [x:" + modelPosition.x + ",y:" + modelPosition.y + ",z:" + modelPosition.z + "]", fontDescription, 0, 42, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size());
       Collection<TexturedTextTile> scaleTextTiles = Text2D.createTextTiles("scale [x: " + modelScale.x + ",y:" + modelScale.y + ",z:" + modelScale.z + "]", fontDescription, 0, 56, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size());
       Collection<TexturedTextTile> vposTextTiles = Text2D.createTextTiles("vpos [x: " + viewPosition.x + ",y:" + viewPosition.y + ",z:" + viewPosition.z + "]", fontDescription, 0, 70, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size());
 

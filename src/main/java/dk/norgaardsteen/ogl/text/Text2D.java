@@ -2,7 +2,6 @@ package dk.norgaardsteen.ogl.text;
 
 import dk.norgaardsteen.ogl.font.FontDescription;
 import dk.norgaardsteen.ogl.math.Positions;
-import dk.norgaardsteen.ogl.resource.ApplicationContext;
 import org.lwjgl.util.vector.Vector2f;
 
 import java.util.ArrayList;
@@ -47,7 +46,7 @@ public class Text2D {
       texturedTextTile.add(Positions.translateToClipSpace(rightPos, bottomPos, displayX, displayY), new Vector2f(s_1, t_1)); // right bottom
       texturedTextTile.add(Positions.translateToClipSpace(rightPos, topPos, displayX, displayY), new Vector2f(s_1, t_0)); // right top
 
-      texturedTextTile.setIndices(vertexOffset);
+      texturedTextTile.setIndicesCCW(vertexOffset);
       texturedTextTiles.add(texturedTextTile);
 
       tileX += glyphMeta.glyphXSize + xPad;
