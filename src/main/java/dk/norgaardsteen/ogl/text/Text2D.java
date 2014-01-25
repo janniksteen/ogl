@@ -2,6 +2,7 @@ package dk.norgaardsteen.ogl.text;
 
 import dk.norgaardsteen.ogl.font.FontDescription;
 import dk.norgaardsteen.ogl.math.Positions;
+import dk.norgaardsteen.ogl.resource.ApplicationContext;
 import org.lwjgl.util.vector.Vector2f;
 
 import java.util.ArrayList;
@@ -14,11 +15,15 @@ import java.util.List;
  */
 public class Text2D {
 
-  public static List<TexturedTextTile> createTextTiles(String text, FontDescription fontDescription, int xPad, int yPad, int displayX, int displayY, int existingTextSize) {
+  public static List<TexturedTextTile> createTextTiles(String text, FontDescription fontDescription, int characterPadding, int xPos, int yPos, int existingTextSize) {
+
+    int displayX = ApplicationContext.getDisplayXSize();
+    int displayY = ApplicationContext.getDisplayYSize();
+
     List<TexturedTextTile> texturedTextTiles = new ArrayList<>();
     int vertexOffset = existingTextSize * 4;
-    int tileX = 0;
-    int tileY = displayY - yPad;
+    int tileX = 0 + xPos;
+    int tileY = displayY - yPos;
 
     for (int cursor = 0; cursor < text.length(); cursor++) {
       int unicode = text.codePointAt(cursor);
@@ -31,8 +36,7 @@ public class Text2D {
       float bottomPos = tileY - glyphMeta.glyphYSize; // y bottom
       float topPos = tileY; // y top
 
-      // resolve the position of the character texture in the font atlas (texture)
-
+      // resolve the position of the character texture in the font atlas
       float atlasXScale = 1.0f / fontDescription.atlasXDimension;
       float atlasYScale = 1.0f / fontDescription.atlasYDimension;
 
@@ -49,7 +53,7 @@ public class Text2D {
       texturedTextTile.setIndicesCCW(vertexOffset);
       texturedTextTiles.add(texturedTextTile);
 
-      tileX += glyphMeta.glyphXSize + xPad;
+      tileX += glyphMeta.glyphXSize + characterPadding;
       vertexOffset += 4;
 
     }

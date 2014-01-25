@@ -537,14 +537,26 @@ public class CubeWithTextDisplay extends Base {
   @Override
   protected void updateStats(int fps) {
     if (showStats) {
+      Runtime rt = Runtime.getRuntime();
+
+      long totalMemory = rt.totalMemory() / (1000 * 1000);
+      long freeMemory = rt.freeMemory() / (1000 * 1000);
+      long usedMemoy = (rt.totalMemory() - rt.freeMemory()) / (1000 * 1000);
+
+      int xpos = 3;
+      int ypos = 2;
+      int charPad = 0;
+      int yPosOffset = 14;
+
       Collection<TexturedTextTile> texturedTextTiles = new ArrayList<>();
-      Collection<TexturedTextTile> fpsTextTiles = Text2D.createTextTiles("fps: " + fps, fontDescription, 0, 0, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), 0);
-      Collection<TexturedTextTile> rotTextTiles = Text2D.createTextTiles("rot [x:" + modelRotation.x + ",y:" + modelRotation.y + ",z:" + modelRotation.z + "]", fontDescription, 0, 14, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size());
-      Collection<TexturedTextTile> fovTextTiles = Text2D.createTextTiles("fov: " + fieldOfView, fontDescription, 0, 28, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size());
-      Collection<TexturedTextTile> posTextTiles = Text2D.createTextTiles("pos [x:" + modelPosition.x + ",y:" + modelPosition.y + ",z:" + modelPosition.z + "]", fontDescription, 0, 42, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size());
-      Collection<TexturedTextTile> scaleTextTiles = Text2D.createTextTiles("scale [x: " + modelScale.x + ",y:" + modelScale.y + ",z:" + modelScale.z + "]", fontDescription, 0, 56, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size());
-      Collection<TexturedTextTile> vposTextTiles = Text2D.createTextTiles("vpos [x: " + viewPosition.x + ",y:" + viewPosition.y + ",z:" + viewPosition.z + "]", fontDescription, 0, 70, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size());
-      Collection<TexturedTextTile> verticesTextTiles = Text2D.createTextTiles("vertices: " + cube.getVertices().size(), fontDescription, 0, 84, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size() + vposTextTiles.size());
+      Collection<TexturedTextTile> fpsTextTiles = Text2D.createTextTiles("fps: " + fps, fontDescription, charPad, xpos, ypos, 0);
+      Collection<TexturedTextTile> rotTextTiles = Text2D.createTextTiles("rot [x:" + modelRotation.x + ",y:" + modelRotation.y + ",z:" + modelRotation.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size());
+      Collection<TexturedTextTile> fovTextTiles = Text2D.createTextTiles("fov: " + fieldOfView, fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size());
+      Collection<TexturedTextTile> posTextTiles = Text2D.createTextTiles("pos [x:" + modelPosition.x + ",y:" + modelPosition.y + ",z:" + modelPosition.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size());
+      Collection<TexturedTextTile> scaleTextTiles = Text2D.createTextTiles("scale [x: " + modelScale.x + ",y:" + modelScale.y + ",z:" + modelScale.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size());
+      Collection<TexturedTextTile> vposTextTiles = Text2D.createTextTiles("vpos [x: " + viewPosition.x + ",y:" + viewPosition.y + ",z:" + viewPosition.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size());
+      Collection<TexturedTextTile> verticesTextTiles = Text2D.createTextTiles("vertices: " + cube.getVertices().size(), fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size() + vposTextTiles.size());
+      Collection<TexturedTextTile> memoryTexttiles = Text2D.createTextTiles("memory[t/f/u]: [" + totalMemory + "/" + freeMemory + "/" + usedMemoy + "]MB", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size() + vposTextTiles.size() + verticesTextTiles.size());
 
       texturedTextTiles.addAll(fpsTextTiles);
       texturedTextTiles.addAll(rotTextTiles);
@@ -553,6 +565,7 @@ public class CubeWithTextDisplay extends Base {
       texturedTextTiles.addAll(scaleTextTiles);
       texturedTextTiles.addAll(vposTextTiles);
       texturedTextTiles.addAll(verticesTextTiles);
+      texturedTextTiles.addAll(memoryTexttiles);
 
       int newTextTilesIndicesCount = TexturedTextTile.INDICES_ELEMENT_COUNT * texturedTextTiles.size();
 
