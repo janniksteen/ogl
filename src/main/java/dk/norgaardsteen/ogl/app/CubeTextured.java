@@ -65,7 +65,7 @@ public class CubeTextured extends Base {
   private static final String VERTEX_SHADER_FILE = "src/main/resources/shaders/cube_textured.vsh";
   private static final String FRAGMENT_SHADER_FILE = "src/main/resources/shaders/cube_textured.fsh";
 
-  private final Shape shape = new Cube();
+  private final Shape shape = new Cube(0.5f);
   private float vertexPositions[];
 
   private Vector3f modelScale = new Vector3f(0.5f, 0.5f, 0.0f);

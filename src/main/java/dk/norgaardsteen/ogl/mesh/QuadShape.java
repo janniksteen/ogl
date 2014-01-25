@@ -34,4 +34,14 @@ public abstract class QuadShape {
     indices[indicesIdx++] = (short)(3 + vertexOffset);
     indices[indicesIdx++] = (short)(2 + vertexOffset);
   }
+
+  protected void dumpIndices() {
+    for (int i = 0; i < indices.length; i = i + 6) {
+      if (i % 6 == 0) {
+        System.out.println(i + " ---------------------------------");
+      }
+      System.out.println("indices[" + indices[i] + "," + indices[i+1] + "," + indices[i+2] + "," + indices[i+3] + "," + indices[i+4] + "," + indices[i+5] + "]");
+    }
+  }
+
 }

@@ -78,6 +78,35 @@ public class Vertex {
   }
 
   @Override
+  public String toString() {
+    StringBuffer b = new StringBuffer();
+    b.append("[x:");
+    b.append(this.xyzw[0]);
+    b.append(",y:");
+    b.append(this.xyzw[1]);
+    b.append(",z:");
+    b.append(this.xyzw[2]);
+    b.append(",w:");
+    b.append(this.xyzw[3]);
+    b.append("|");
+    b.append("s:");
+    b.append(this.st[0]);
+    b.append(",t:");
+    b.append(this.st[1]);
+    b.append("|");
+    b.append("r:");
+    b.append(this.rgba[0]);
+    b.append(",g:");
+    b.append(this.rgba[1]);
+    b.append(",b:");
+    b.append(this.rgba[2]);
+    b.append(",a:");
+    b.append(this.rgba[3]);
+    b.append("]");
+    return b.toString();
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;

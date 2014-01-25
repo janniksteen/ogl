@@ -4,7 +4,6 @@ import dk.norgaardsteen.ogl.Base;
 import dk.norgaardsteen.ogl.font.FontDescription;
 import dk.norgaardsteen.ogl.math.Trigonometric;
 import dk.norgaardsteen.ogl.mesh.Cube;
-import dk.norgaardsteen.ogl.mesh.GeneratedCube;
 import dk.norgaardsteen.ogl.mesh.Shape;
 import dk.norgaardsteen.ogl.mesh.Vertex;
 import dk.norgaardsteen.ogl.resource.ApplicationContext;
@@ -31,7 +30,6 @@ import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
-import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
@@ -43,7 +41,7 @@ import java.util.List;
  * Date: 11/1/13
  * Time: 11:51 AM
  */
-public class CubeWithTextDisplay extends Base {
+public class MultiCubes extends Base {
 
   private static final Vector3f X_AXIS = new Vector3f(1.0f, 0.0f, 0.0f);
   private static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
@@ -82,14 +80,13 @@ public class CubeWithTextDisplay extends Base {
   private static final String TEXT2D_VERTEX_SHADER_FILE = "src/main/resources/shaders/text2d.vsh";
   private static final String TEXT2D_FRAGMENT_SHADER_FILE = "src/main/resources/shaders/text2d.fsh";
 
-//  private final Shape cube = new Cube(1.33f);
-  private final Shape cube = new GeneratedCube();
+  private final Shape cube = new Cube(0.5f);
 
   private Vector3f modelScale = new Vector3f(0.5f, 0.5f, 0.5f);
   private Vector3f modelPosition = new Vector3f(0.0f, 0.0f, 0.0f);
   private Vector3f modelRotation = new Vector3f(0.0f, 0.0f, 0.0f);
 
-  private Vector3f viewPosition = new Vector3f(0.0f, 0.0f, -12.5f);
+  private Vector3f viewPosition = new Vector3f(0.0f, 0.0f, -1.5f);
   private float viewPositionDelta = -0.05f;
 
   private float fieldOfView = 67.0f;
@@ -360,7 +357,7 @@ public class CubeWithTextDisplay extends Base {
           modelScale = new Vector3f(0.5f, 0.5f, 0.5f);
           modelPosition = new Vector3f(0.0f, 0.0f, 0.0f);
           modelRotation = new Vector3f(0.0f, 0.0f, 0.0f);
-          viewPosition = new Vector3f(0.0f, 0.0f, -12.5f);
+          viewPosition = new Vector3f(0.0f, 0.0f, -1.5f);
           fieldOfView = 67.0f;
           prepareMatrices();
           break;
@@ -478,7 +475,7 @@ public class CubeWithTextDisplay extends Base {
   @Override
   public void init() {
     try {
-      Display.setTitle(CubeWithTextDisplay.class.getName());
+      Display.setTitle(MultiCubes.class.getName());
       Display.setDisplayMode(new DisplayMode(displayWidth, displayHeight));
       Display.setResizable(true);
 
@@ -544,7 +541,6 @@ public class CubeWithTextDisplay extends Base {
       Collection<TexturedTextTile> posTextTiles = Text2D.createTextTiles("pos [x:" + modelPosition.x + ",y:" + modelPosition.y + ",z:" + modelPosition.z + "]", fontDescription, 0, 42, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size());
       Collection<TexturedTextTile> scaleTextTiles = Text2D.createTextTiles("scale [x: " + modelScale.x + ",y:" + modelScale.y + ",z:" + modelScale.z + "]", fontDescription, 0, 56, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size());
       Collection<TexturedTextTile> vposTextTiles = Text2D.createTextTiles("vpos [x: " + viewPosition.x + ",y:" + viewPosition.y + ",z:" + viewPosition.z + "]", fontDescription, 0, 70, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size());
-      Collection<TexturedTextTile> verticesTextTiles = Text2D.createTextTiles("vertices: " + cube.getVertices().size(), fontDescription, 0, 84, ApplicationContext.getDisplayXSize(), ApplicationContext.getDisplayYSize(), fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size() + vposTextTiles.size());
 
       texturedTextTiles.addAll(fpsTextTiles);
       texturedTextTiles.addAll(rotTextTiles);
@@ -552,7 +548,6 @@ public class CubeWithTextDisplay extends Base {
       texturedTextTiles.addAll(posTextTiles);
       texturedTextTiles.addAll(scaleTextTiles);
       texturedTextTiles.addAll(vposTextTiles);
-      texturedTextTiles.addAll(verticesTextTiles);
 
       int newTextTilesIndicesCount = TexturedTextTile.INDICES_ELEMENT_COUNT * texturedTextTiles.size();
 
@@ -597,7 +592,7 @@ public class CubeWithTextDisplay extends Base {
   }
 
   public static void main(String[] args) throws LWJGLException {
-    CubeWithTextDisplay fun = new CubeWithTextDisplay();
+    MultiCubes fun = new MultiCubes();
     fun.start();
     fun.stop();
   }
