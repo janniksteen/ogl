@@ -1,5 +1,7 @@
 package dk.norgaardsteen.ogl.mesh;
 
+import org.lwjgl.util.vector.Matrix4f;
+
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -8,7 +10,7 @@ import java.util.Collection;
  * Date: 11/19/13
  * Time: 4:38 PM
  */
-public class Cube extends QuadShape implements Shape {
+public class DeprecatedCube extends QuadShape implements Shape {
 
   private static final float[] RED = {0.545f, 0.000f, 0.000f};
   private static final float[] GREEN = {0.000f, 0.392f, 0.000f};
@@ -21,47 +23,65 @@ public class Cube extends QuadShape implements Shape {
   
   private Collection<Vertex> vertices;
 
-  public Cube(float xyz) {
+  public DeprecatedCube(float xyz) {
+
     this.xyz = xyz;
     vertices = new ArrayList<>();
-    indices = new short[6 *6];
+    indices = new short[6 * 6];
     byte vertexOffset = 0;
+
+    // front
+    //
+    //  (3) +-------+ (2)
+    //      |       |
+    //      |   +   |
+    //      |       |
+    //  (0) +-------+ (1)
+    vertices.add(new Vertex().setXYZ(-xyz, xyz, xyz).setRGB(GREEN).setST(1,0)); // (0)
+    vertices.add(new Vertex().setXYZ(-xyz, -xyz, xyz).setRGB(GREEN).setST(0,1)); // (1)
+    vertices.add(new Vertex().setXYZ(xyz, -xyz, xyz).setRGB(GREEN).setST(1,1)); // (2)
+    vertices.add(new Vertex().setXYZ(xyz, xyz, xyz).setRGB(GREEN).setST(1,0)); // (3)
+    setIndicesCCW(vertexOffset + 4);
+
     // rear
     vertices.add(new Vertex().setXYZ(-xyz, xyz, -xyz).setRGB(RED).setST(0,0)); // top left (0)
     vertices.add(new Vertex().setXYZ(-xyz, -xyz, -xyz).setRGB(RED).setST(0,1)); // bottom left (1)
     vertices.add(new Vertex().setXYZ(xyz, -xyz, -xyz).setRGB(RED).setST(1,1)); // bottom right (2)
     vertices.add(new Vertex().setXYZ(xyz, xyz, -xyz).setRGB(RED).setST(1,0)); // top right (3)
-    setIndicesCW(vertexOffset);
-    // front
-    vertices.add(new Vertex().setXYZ(-xyz, xyz, xyz).setRGB(GREEN).setST(0,0)); // (0)
-    vertices.add(new Vertex().setXYZ(-xyz, -xyz, xyz).setRGB(GREEN).setST(0,1)); // (1)
-    vertices.add(new Vertex().setXYZ(xyz, -xyz, xyz).setRGB(GREEN).setST(1,1)); // (2)
-    vertices.add(new Vertex().setXYZ(xyz, xyz, xyz).setRGB(GREEN).setST(1,0)); // (3)
-    setIndicesCCW(vertexOffset + 4);
+    setIndicesCCW(vertexOffset);
+
     // left
     vertices.add(new Vertex().setXYZ(-xyz, xyz, xyz).setRGB(BLUE).setST(0,0));
     vertices.add(new Vertex().setXYZ(-xyz, xyz, -xyz).setRGB(BLUE).setST(0,1));
     vertices.add(new Vertex().setXYZ(-xyz, -xyz, -xyz).setRGB(BLUE).setST(1,1));
     vertices.add(new Vertex().setXYZ(-xyz, -xyz, xyz).setRGB(BLUE).setST(1,0));
     setIndicesCCW(vertexOffset + 8);
+
     // right
     vertices.add(new Vertex().setXYZ(xyz, xyz, xyz).setRGB(DARK_BROWN).setST(0,0));
     vertices.add(new Vertex().setXYZ(xyz, xyz, -xyz).setRGB(DARK_BROWN).setST(0,1));
     vertices.add(new Vertex().setXYZ(xyz, -xyz, -xyz).setRGB(DARK_BROWN).setST(1,1));
     vertices.add(new Vertex().setXYZ(xyz, -xyz, xyz).setRGB(DARK_BROWN).setST(1,0));
-    setIndicesCW(vertexOffset + 12);
+    setIndicesCCW(vertexOffset + 12);
+
     // top
     vertices.add(new Vertex().setXYZ(-xyz, xyz, xyz).setRGB(ORANGE).setST(0,0));
     vertices.add(new Vertex().setXYZ(xyz, xyz, xyz).setRGB(ORANGE).setST(0,1));
     vertices.add(new Vertex().setXYZ(xyz, xyz, -xyz).setRGB(ORANGE).setST(1,1));
     vertices.add(new Vertex().setXYZ(-xyz, xyz, -xyz).setRGB(ORANGE).setST(1,0));
     setIndicesCCW(vertexOffset + 16);
+
     // bottom
     vertices.add(new Vertex().setXYZ(-xyz, -xyz, xyz).setRGB(DIM_GREY).setST(0,0));
     vertices.add(new Vertex().setXYZ(xyz, -xyz, xyz).setRGB(DIM_GREY).setST(0,1));
     vertices.add(new Vertex().setXYZ(xyz, -xyz, -xyz).setRGB(DIM_GREY).setST(1,1));
     vertices.add(new Vertex().setXYZ(-xyz, -xyz, -xyz).setRGB(DIM_GREY).setST(1,0));
-    setIndicesCW(vertexOffset + 20);
+    setIndicesCCW(vertexOffset + 20);
+  }
+
+  @Override
+  public Matrix4f getModelMatrix() {
+    return null;
   }
 
   @Override
@@ -72,5 +92,10 @@ public class Cube extends QuadShape implements Shape {
   @Override
   public short[] getIndices() {
     return indices;
+  }
+
+  @Override
+  public byte getType() {
+    return 0;
   }
 }

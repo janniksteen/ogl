@@ -1,15 +1,19 @@
 package dk.norgaardsteen.ogl.mesh;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 /**
  * User: jns
  * Date: 12/16/13
  * Time: 10:01 PM
  */
-public abstract class QuadShape {
+public abstract class QuadShape implements Shape {
 
   public static final int INDICES_ELEMENT_COUNT = 6;
   protected short[] indices;
   protected int indicesIdx = 0;
+  protected Collection<Vertex> vertices;
 
   protected void setIndicesCCW(int vertexOffset) {
     if (indices == null) {
@@ -44,4 +48,19 @@ public abstract class QuadShape {
     }
   }
 
+  protected void dumpVertices() {
+    int i = 0;
+    for (Vertex v : vertices) {
+      if (i % 4 == 0) {
+        System.out.println(i + " ---------------------------------");
+      }
+      System.out.println(v);
+      i++;
+    }
+  }
+
+  @Override
+  public Collection<Vertex> getVertices() {
+    return vertices;
+  }
 }

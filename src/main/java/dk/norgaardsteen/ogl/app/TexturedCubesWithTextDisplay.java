@@ -4,12 +4,9 @@ import dk.norgaardsteen.ogl.Base;
 import dk.norgaardsteen.ogl.font.FontDescription;
 import dk.norgaardsteen.ogl.math.Trigonometric;
 import dk.norgaardsteen.ogl.math.Vectors;
-import dk.norgaardsteen.ogl.mesh.ShapeBuilder;
-import dk.norgaardsteen.ogl.mesh.SimpleVoxel;
-import dk.norgaardsteen.ogl.mesh.Voxel;
 import dk.norgaardsteen.ogl.mesh.Shape;
+import dk.norgaardsteen.ogl.mesh.SimpleVoxel;
 import dk.norgaardsteen.ogl.mesh.Vertex;
-import dk.norgaardsteen.ogl.mesh.color.ColorCollection;
 import dk.norgaardsteen.ogl.shader.ProgramLinker;
 import dk.norgaardsteen.ogl.shader.ProgramLinkerResult;
 import dk.norgaardsteen.ogl.shader.ShaderCompiler;
@@ -17,6 +14,8 @@ import dk.norgaardsteen.ogl.shader.shared.AttribLocation;
 import dk.norgaardsteen.ogl.shader.shared.UniformLocation;
 import dk.norgaardsteen.ogl.text.Text2D;
 import dk.norgaardsteen.ogl.text.TexturedTextTile;
+import dk.norgaardsteen.ogl.texture.TextureData;
+import dk.norgaardsteen.ogl.texture.Textures;
 import dk.norgaardsteen.ogl.util.PNGLoader;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
@@ -33,7 +32,9 @@ import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,7 +45,7 @@ import java.util.List;
  * Date: 11/1/13
  * Time: 11:51 AM
  */
-public class CubeWithTextDisplay extends Base {
+public class TexturedCubesWithTextDisplay extends Base {
 
   private int displayWidth = 1280;
   private int displayHeight = 720;
@@ -62,10 +63,13 @@ public class CubeWithTextDisplay extends Base {
 
   private int textTilesIndicesCount = 0;
 
+  private int cubeTextureHandle = 0;
+
   private int projectionMatrixUniformLocationHandle = 0;
   private int viewMatrixUniformLocationHandle = 0;
   private int modelMatrixUniformLocationHandle = 0;
   private int fontTextureUniformLocationHandle = 0;
+  private int cubeTextureUniformLocationHandle = 0;
 
   private Matrix4f modelMatrix;
   private Matrix4f viewMatrix;
@@ -74,12 +78,11 @@ public class CubeWithTextDisplay extends Base {
   private final FloatBuffer matrix4fViewBuffer = BufferUtils.createFloatBuffer(16);
   private final FloatBuffer matrix4fProjectionBuffer = BufferUtils.createFloatBuffer(16);
 
-  private static final String CUBE_VERTEX_SHADER_FILE = "src/main/resources/shaders/cube.vsh";
-  private static final String CUBE_FRAGMENT_SHADER_FILE = "src/main/resources/shaders/cube.fsh";
+  private static final String CUBE_VERTEX_SHADER_FILE = "src/main/resources/shaders/cube_textured.vsh";
+  private static final String CUBE_FRAGMENT_SHADER_FILE = "src/main/resources/shaders/cube_textured.fsh";
   private static final String TEXT2D_VERTEX_SHADER_FILE = "src/main/resources/shaders/text2d.vsh";
   private static final String TEXT2D_FRAGMENT_SHADER_FILE = "src/main/resources/shaders/text2d.fsh";
 
-//  private final Shape cube = ShapeBuilder.buildDirtWithSandVoxel();
   private final Shape cube = new SimpleVoxel();
 
   private Vector3f modelScale = new Vector3f(1.0f, 1.0f, 1.0f);
@@ -120,6 +123,7 @@ public class CubeWithTextDisplay extends Base {
     for (Vertex vertex : vertexList) {
       cubeModelBuffer.put(vertex.getXYZW());
       cubeModelBuffer.put(vertex.getRGBA());
+      cubeModelBuffer.put(vertex.getST());
     }
     cubeModelBuffer.flip();
 
@@ -144,12 +148,15 @@ public class CubeWithTextDisplay extends Base {
     // * 4: normalized or not
     // * 5: stride (spacing between vertices values) (float size in bytes * total floats per vertex)
     // * 6: offset to values from the start of array (idx=0)
-    int stride = Vertex.ELEMENT_BYTES * (Vertex.POSITION_ELEMENT_COUNT + Vertex.COLOR_ELEMENT_COUNT);
-    int colorValuesByteOffset = Vertex.ELEMENT_BYTES * Vertex.POSITION_ELEMENT_COUNT;
+    int stride = Vertex.ELEMENT_BYTES * Vertex.TOTAL_ELEMENT_COUNT;
+    int colorValuesOffset = Vertex.ELEMENT_BYTES * Vertex.POSITION_ELEMENT_COUNT;
+    int textureValueOffset = colorValuesOffset + Vertex.ELEMENT_BYTES * Vertex.COLOR_ELEMENT_COUNT;
     // assign positions
     GL20.glVertexAttribPointer(0, Vertex.POSITION_ELEMENT_COUNT, GL11.GL_FLOAT, false, stride, 0);
     // assign colors
-    GL20.glVertexAttribPointer(1, Vertex.COLOR_ELEMENT_COUNT, GL11.GL_FLOAT, false, stride, colorValuesByteOffset);
+    GL20.glVertexAttribPointer(1, Vertex.COLOR_ELEMENT_COUNT, GL11.GL_FLOAT, false, stride, colorValuesOffset);
+    // assign texture coordinates
+    GL20.glVertexAttribPointer(2, Vertex.TEXTURE_COORDINATE_ELEMENT_COUNT, GL11.GL_FLOAT, false, stride, textureValueOffset);
 
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     GL30.glBindVertexArray(0);
@@ -174,19 +181,50 @@ public class CubeWithTextDisplay extends Base {
 
   @Override
   public void prepareTextures() {
+    prepareVoxelTexture();
     prepareFontTexture();
   }
 
+  private void prepareVoxelTexture() {
+    TextureData texture = Textures.buildDirtLight();
+    ByteBuffer buffer = ByteBuffer.allocateDirect(texture.getData().length);
+    buffer.put(texture.getData());
+    buffer.flip();
+
+    cubeTextureHandle = GL11.glGenTextures();
+
+    GL13.glActiveTexture(GL13.GL_TEXTURE0);
+    GL11.glEnable(GL11.GL_TEXTURE_2D);
+    GL11.glBindTexture(GL11.GL_TEXTURE_2D, cubeTextureHandle);
+    // rgb bytes aligned and is one byte each
+    GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);
+    // upload bytes
+    GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, texture.getW(), texture.getH(), 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+    // clamp the texture across whole face on S & T coordinates (and thereby stretching it to fit a whole face)
+    GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL11.GL_CLAMP);
+    GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_CLAMP);
+    // sharp texture - kaziinnng
+    GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
+    GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
+
+    // mipmap
+    //GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
+
+    cubeTextureUniformLocationHandle = GL20.glGetUniformLocation(programsLinked.get(0).programHandle, "cube_texture");
+  }
+
   private void prepareFontTexture() {
-    PNGLoader.PNGResult pngResult = PNGLoader.load(FONT_TEXTURE_ATLAS_FILE, PNGLoader.Format.RGBA);
+    PNGLoader.PNGResult fontTexture = PNGLoader.load(FONT_TEXTURE_ATLAS_FILE, PNGLoader.Format.RGBA);
+
     fontTextureHandle = GL11.glGenTextures();
 
     GL13.glActiveTexture(GL13.GL_TEXTURE0);
+    GL11.glEnable(GL11.GL_TEXTURE_2D);
     GL11.glBindTexture(GL11.GL_TEXTURE_2D, fontTextureHandle);
-    // rgb bytes aligned and one byte each
+    // rgb bytes aligned and is one byte each
     GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);
     // upload bytes
-    GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, pngResult.width, pngResult.height, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pngResult.bytes);
+    GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, fontTexture.width, fontTexture.height, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, fontTexture.bytes);
     // mipmap
     GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
 
@@ -328,7 +366,12 @@ public class CubeWithTextDisplay extends Base {
         case Keyboard.KEY_F4:
           viewPosition.z -= viewPositionDelta;
           break;
-
+        case Keyboard.KEY_F7:
+          if (wireframe) {
+            wireframe = false;
+          } else {
+            wireframe = true;
+          }
         case Keyboard.KEY_F8:
           if (facecull) {
             facecull = false;
@@ -382,8 +425,10 @@ public class CubeWithTextDisplay extends Base {
     List<AttribLocation> attribLocationList = new ArrayList<>(3);
     AttribLocation inPositionAttribLocation = new AttribLocation(0, "in_position");
     AttribLocation inColorAttribLocation = new AttribLocation(1, "in_color");
+    AttribLocation inTexCoordAttribLocation = new AttribLocation(2, "in_texcoord");
     attribLocationList.add(inPositionAttribLocation);
     attribLocationList.add(inColorAttribLocation);
+    attribLocationList.add(inTexCoordAttribLocation);
 
     List<UniformLocation> uniformLocationList = new ArrayList<>(3);
     UniformLocation projectionMatrixUniformLocation = new UniformLocation(UniformLocation.PROJECTION_MATRIX_UNIFORM_LOCATION_NAME);
@@ -425,6 +470,11 @@ public class CubeWithTextDisplay extends Base {
     // render cube
 
     GL20.glUseProgram(programsLinked.get(0).programHandle);
+
+    GL13.glActiveTexture(GL13.GL_TEXTURE0);
+    GL11.glBindTexture(GL11.GL_TEXTURE_2D, cubeTextureHandle);
+    GL20.glUniform1i(cubeTextureUniformLocationHandle, 0);
+
     GL20.glUniformMatrix4(projectionMatrixUniformLocationHandle, false, matrix4fProjectionBuffer);
     GL20.glUniformMatrix4(viewMatrixUniformLocationHandle, false, matrix4fViewBuffer);
     GL20.glUniformMatrix4(modelMatrixUniformLocationHandle, false, matrix4fModelBuffer);
@@ -433,6 +483,7 @@ public class CubeWithTextDisplay extends Base {
     GL30.glBindVertexArray(cubeVAOHandle);
     GL20.glEnableVertexAttribArray(0);
     GL20.glEnableVertexAttribArray(1);
+    GL20.glEnableVertexAttribArray(2);
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cubeVBOHandle);
     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, cubeVBOIndicesHandle);
 
@@ -442,8 +493,11 @@ public class CubeWithTextDisplay extends Base {
       GL11.glEnable(GL11.GL_CULL_FACE);
     }
 
+    if (wireframe) {
+      GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE);
+    }
     GL11.glDrawElements(GL11.GL_TRIANGLES, cube.getIndices().length, GL11.GL_UNSIGNED_SHORT, 0);
-
+    GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_FILL);
     GL11.glDisable(GL11.GL_CULL_FACE);
 
     GL20.glDisableVertexAttribArray(0);
@@ -453,6 +507,7 @@ public class CubeWithTextDisplay extends Base {
 
     if (showStats) {
       GL20.glUseProgram(programsLinked.get(1).programHandle);
+
       GL13.glActiveTexture(GL13.GL_TEXTURE0);
       GL11.glBindTexture(GL11.GL_TEXTURE_2D, fontTextureHandle);
       GL20.glUniform1i(fontTextureUniformLocationHandle, 0);
@@ -476,6 +531,10 @@ public class CubeWithTextDisplay extends Base {
         GL11.glDisable(GL11.GL_BLEND);
       }
       GL11.glEnable(GL11.GL_DEPTH_TEST);
+
+      GL13.glActiveTexture(GL13.GL_TEXTURE1);
+      GL11.glDisable(GL11.GL_TEXTURE_2D);
+
       GL20.glDisableVertexAttribArray(0);
       GL20.glDisableVertexAttribArray(1);
       GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
@@ -486,7 +545,7 @@ public class CubeWithTextDisplay extends Base {
   @Override
   public void init() {
     try {
-      Display.setTitle(CubeWithTextDisplay.class.getName());
+      Display.setTitle(TexturedCubesWithTextDisplay.class.getName());
       Display.setDisplayMode(new DisplayMode(displayWidth, displayHeight));
       Display.setResizable(true);
 
@@ -510,14 +569,27 @@ public class CubeWithTextDisplay extends Base {
       GL11.glDepthFunc(GL11.GL_LESS);
       GL11.glDepthMask(true);
 
+
+      printCapabilities();
+
     } catch (LWJGLException e) {
       e.printStackTrace();
       System.exit(0);
     }
   }
 
+  private void printCapabilities() {
+    System.out.println("Platform capabilities:");
+    System.out.println("-------------------------------------");
+    IntBuffer maxTextureUnits = BufferUtils.createIntBuffer(16);
+    GL11.glGetInteger(GL13.GL_MAX_TEXTURE_UNITS, maxTextureUnits);
+    System.out.println("MAX_TEXTURE_UNITS:" + maxTextureUnits.get(0));
+    System.out.println();
+  }
+
   public void cleanup() {
     GL11.glDeleteTextures(fontTextureHandle);
+    GL11.glDeleteTextures(cubeTextureHandle);
 
     for (ProgramLinkerResult programLinkerResult : programsLinked) {
       GL20.glUseProgram(programLinkerResult.programHandle);
@@ -557,15 +629,15 @@ public class CubeWithTextDisplay extends Base {
       int yPosOffset = 14;
 
       Collection<TexturedTextTile> texturedTextTiles = new ArrayList<>();
-      Collection<TexturedTextTile> fpsTextTiles = Text2D.createTextTiles("fps:" + fps, fontDescription, charPad, xpos, ypos, 0);
-      Collection<TexturedTextTile> rotTextTiles = Text2D.createTextTiles("rot[x:" + modelRotation.x + ",y:" + modelRotation.y + ",z:" + modelRotation.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size());
-      Collection<TexturedTextTile> fovTextTiles = Text2D.createTextTiles("fov:" + fieldOfView, fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size());
-      Collection<TexturedTextTile> posTextTiles = Text2D.createTextTiles("pos[x:" + modelPosition.x + ",y:" + modelPosition.y + ",z:" + modelPosition.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size());
-      Collection<TexturedTextTile> scaleTextTiles = Text2D.createTextTiles("scale[x: " + modelScale.x + ",y:" + modelScale.y + ",z:" + modelScale.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size());
-      Collection<TexturedTextTile> vposTextTiles = Text2D.createTextTiles("vpos[x: " + viewPosition.x + ",y:" + viewPosition.y + ",z:" + viewPosition.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size());
-      Collection<TexturedTextTile> verticesTextTiles = Text2D.createTextTiles("vertices:" + cube.getVertices().size(), fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size() + vposTextTiles.size());
-      Collection<TexturedTextTile> memoryTextTiles = Text2D.createTextTiles("memory[t/f/u]:[" + totalMemory + "/" + freeMemory + "/" + usedMemoy + "]MB", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size() + vposTextTiles.size() + verticesTextTiles.size());
-      Collection<TexturedTextTile> funcTextTiles = Text2D.createTextTiles("fcull:" + Boolean.toString(facecull), fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size() + vposTextTiles.size() + verticesTextTiles.size() + memoryTextTiles.size());
+      Collection<TexturedTextTile> fpsTextTiles = Text2D.createTextTiles("fps: " + fps, fontDescription, charPad, xpos, ypos, 0);
+      Collection<TexturedTextTile> rotTextTiles = Text2D.createTextTiles("rot [x:" + modelRotation.x + ",y:" + modelRotation.y + ",z:" + modelRotation.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size());
+      Collection<TexturedTextTile> fovTextTiles = Text2D.createTextTiles("fov: " + fieldOfView, fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size());
+      Collection<TexturedTextTile> posTextTiles = Text2D.createTextTiles("pos [x:" + modelPosition.x + ",y:" + modelPosition.y + ",z:" + modelPosition.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size());
+      Collection<TexturedTextTile> scaleTextTiles = Text2D.createTextTiles("scale [x: " + modelScale.x + ",y:" + modelScale.y + ",z:" + modelScale.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size());
+      Collection<TexturedTextTile> vposTextTiles = Text2D.createTextTiles("vpos [x: " + viewPosition.x + ",y:" + viewPosition.y + ",z:" + viewPosition.z + "]", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size());
+      Collection<TexturedTextTile> verticesTextTiles = Text2D.createTextTiles("vertices: " + cube.getVertices().size(), fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size() + vposTextTiles.size());
+      Collection<TexturedTextTile> memoryTextTiles = Text2D.createTextTiles("memory[t/f/u]: [" + totalMemory + "/" + freeMemory + "/" + usedMemoy + "]MB", fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size() + vposTextTiles.size() + verticesTextTiles.size());
+      Collection<TexturedTextTile> funcTextTiles = Text2D.createTextTiles("fc:" + (facecull ? "y" : "n"), fontDescription, charPad, xpos, ypos += yPosOffset, fpsTextTiles.size() + rotTextTiles.size() + fovTextTiles.size() + posTextTiles.size() + scaleTextTiles.size() + vposTextTiles.size() + verticesTextTiles.size() + memoryTextTiles.size());
 
       texturedTextTiles.addAll(fpsTextTiles);
       texturedTextTiles.addAll(rotTextTiles);
@@ -620,7 +692,7 @@ public class CubeWithTextDisplay extends Base {
   }
 
   public static void main(String[] args) throws LWJGLException {
-    CubeWithTextDisplay fun = new CubeWithTextDisplay();
+    TexturedCubesWithTextDisplay fun = new TexturedCubesWithTextDisplay();
     fun.start();
     fun.stop();
   }

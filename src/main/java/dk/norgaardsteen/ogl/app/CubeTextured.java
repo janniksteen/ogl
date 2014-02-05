@@ -2,14 +2,16 @@ package dk.norgaardsteen.ogl.app;
 
 import dk.norgaardsteen.ogl.Base;
 import dk.norgaardsteen.ogl.math.Trigonometric;
-import dk.norgaardsteen.ogl.mesh.Cube;
+import dk.norgaardsteen.ogl.mesh.DeprecatedCube;
 import dk.norgaardsteen.ogl.mesh.Shape;
+import dk.norgaardsteen.ogl.mesh.SimpleVoxel;
 import dk.norgaardsteen.ogl.mesh.Vertex;
 import dk.norgaardsteen.ogl.shader.ProgramLinker;
 import dk.norgaardsteen.ogl.shader.ProgramLinkerResult;
 import dk.norgaardsteen.ogl.shader.ShaderCompiler;
 import dk.norgaardsteen.ogl.shader.shared.AttribLocation;
 import dk.norgaardsteen.ogl.shader.shared.UniformLocation;
+import dk.norgaardsteen.ogl.texture.Textures;
 import dk.norgaardsteen.ogl.util.FloatArrayList;
 import dk.norgaardsteen.ogl.util.PNGLoader;
 import org.lwjgl.BufferUtils;
@@ -65,14 +67,15 @@ public class CubeTextured extends Base {
   private static final String VERTEX_SHADER_FILE = "src/main/resources/shaders/cube_textured.vsh";
   private static final String FRAGMENT_SHADER_FILE = "src/main/resources/shaders/cube_textured.fsh";
 
-  private final Shape shape = new Cube(0.5f);
+  private Shape shape = new DeprecatedCube(1.0f);
+
   private float vertexPositions[];
 
   private Vector3f modelScale = new Vector3f(0.5f, 0.5f, 0.0f);
   private Vector3f modelPosition = new Vector3f(0.0f, 0.0f, 0.0f);
   private Vector3f modelRotation = new Vector3f(0.0f, 0.0f, 0.0f);
 
-  private Vector3f viewPosition = new Vector3f(0.0f, 0.0f, -1.0f);
+  private Vector3f viewPosition = new Vector3f(0.0f, 0.0f, 0.0f);
 
   private float fieldOfView = 67.0f;
   private final float fieldOfViewDelta = 1.0f;
@@ -83,8 +86,7 @@ public class CubeTextured extends Base {
   private final Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
   private final Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
 
-  private final static String FONT_TEXTURE_ATLAS_FILE = "src/main/resources/img/uc0x20_0xff_Ubuntu Mono_x10_y14.png";
-  private final static String FONT_DESCRIPTION_FILE = "src/main/resources/img/uc0x20_0xff_Ubuntu Mono_x10_y14.fnt";
+  private final static String FONT_TEXTURE_ATLAS_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x6_y12.png";
 
   @Override
   public void prepareBuffers() {
@@ -140,6 +142,7 @@ public class CubeTextured extends Base {
   @Override
   public void prepareTextures() {
     PNGLoader.PNGResult pngResult = PNGLoader.load(FONT_TEXTURE_ATLAS_FILE, PNGLoader.Format.RGBA);
+
     textureHandle = GL11.glGenTextures();
     GL13.glActiveTexture(GL13.GL_TEXTURE0);
     GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureHandle);

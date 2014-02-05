@@ -3,6 +3,7 @@ package dk.norgaardsteen.ogl.text;
 import dk.norgaardsteen.ogl.mesh.QuadShape;
 import dk.norgaardsteen.ogl.mesh.Shape;
 import dk.norgaardsteen.ogl.mesh.Vertex;
+import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector2f;
 
 import java.util.ArrayList;
@@ -46,6 +47,11 @@ public class TexturedTextTile extends QuadShape implements Shape {
   }
 
   @Override
+  public Matrix4f getModelMatrix() {
+    return null;
+  }
+
+  @Override
   public Collection<Vertex> getVertices() {
     return vertices;
   }
@@ -53,6 +59,11 @@ public class TexturedTextTile extends QuadShape implements Shape {
   @Override
   public short[] getIndices() {
     return indices;
+  }
+
+  @Override
+  public byte getType() {
+    return 0;
   }
 
   public char getChar() {

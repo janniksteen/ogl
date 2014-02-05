@@ -15,7 +15,11 @@ import java.util.Random;
  * Date: 1/5/14
  * Time: 5:00 PM
  */
-public class GeneratedCube extends QuadShape implements Shape {
+public class Voxel extends QuadShape {
+
+  private byte type;
+
+  private static final float DIMENSION = 1.0f;
 
   // axis vectors
   private static final Vector3f X_AXIS = new Vector3f(1.0f, 0.0f, 0.0f);
@@ -32,7 +36,7 @@ public class GeneratedCube extends QuadShape implements Shape {
 
   static {
     FRONT_FACE = new Matrix4f();
-    Matrix4f.translate(new Vector3f(0.0f, 0.0f, 8.0f), FRONT_FACE, FRONT_FACE);
+    Matrix4f.translate(new Vector3f(0.0f, 0.0f, DIMENSION / 2), FRONT_FACE, FRONT_FACE);
     Matrix4f.rotate((float)Math.toRadians(0), Z_AXIS, FRONT_FACE, FRONT_FACE);
     Matrix4f.rotate((float)Math.toRadians(0), Y_AXIS, FRONT_FACE, FRONT_FACE);
     Matrix4f.rotate((float)Math.toRadians(0), X_AXIS, FRONT_FACE, FRONT_FACE);
@@ -40,7 +44,7 @@ public class GeneratedCube extends QuadShape implements Shape {
 
   static {
     LEFT_FACE = new Matrix4f();
-    Matrix4f.translate(new Vector3f(-8.0f, 0.0f, 0.0f), LEFT_FACE, LEFT_FACE);
+    Matrix4f.translate(new Vector3f(-DIMENSION / 2, 0.0f, 0.0f), LEFT_FACE, LEFT_FACE);
     Matrix4f.rotate((float)Math.toRadians(0), Z_AXIS, LEFT_FACE, LEFT_FACE);
     Matrix4f.rotate((float)Math.toRadians(-90), Y_AXIS, LEFT_FACE, LEFT_FACE);
     Matrix4f.rotate((float) Math.toRadians(0), X_AXIS, LEFT_FACE, LEFT_FACE);
@@ -48,7 +52,7 @@ public class GeneratedCube extends QuadShape implements Shape {
 
   static {
     RIGHT_FACE = new Matrix4f();
-    Matrix4f.translate(new Vector3f(8.0f, 0.0f, 0.0f), RIGHT_FACE, RIGHT_FACE);
+    Matrix4f.translate(new Vector3f(DIMENSION / 2, 0.0f, 0.0f), RIGHT_FACE, RIGHT_FACE);
     Matrix4f.rotate((float)Math.toRadians(0), Z_AXIS, RIGHT_FACE, RIGHT_FACE);
     Matrix4f.rotate((float)Math.toRadians(-270), Y_AXIS, RIGHT_FACE, RIGHT_FACE);
     Matrix4f.rotate((float) Math.toRadians(0), X_AXIS, RIGHT_FACE, RIGHT_FACE);
@@ -56,15 +60,15 @@ public class GeneratedCube extends QuadShape implements Shape {
 
   static {
     BACK_FACE = new Matrix4f();
-    Matrix4f.translate(new Vector3f(0.0f, 0.0f, -8.0f), BACK_FACE, BACK_FACE);
-    Matrix4f.rotate((float)Math.toRadians(0), Z_AXIS, BACK_FACE, BACK_FACE);
+    Matrix4f.translate(new Vector3f(0.0f, 0.0f, -DIMENSION / 2), BACK_FACE, BACK_FACE);
+    Matrix4f.rotate((float) Math.toRadians(0), Z_AXIS, BACK_FACE, BACK_FACE);
     Matrix4f.rotate((float)Math.toRadians(-180), Y_AXIS, BACK_FACE, BACK_FACE);
     Matrix4f.rotate((float) Math.toRadians(0), X_AXIS, BACK_FACE, BACK_FACE);
   }
 
   static {
     TOP_FACE = new Matrix4f();
-    Matrix4f.translate(new Vector3f(0.0f, 8.0f, 0.0f), TOP_FACE, TOP_FACE);
+    Matrix4f.translate(new Vector3f(0.0f, DIMENSION / 2, 0.0f), TOP_FACE, TOP_FACE);
     Matrix4f.rotate((float)Math.toRadians(0), Z_AXIS, TOP_FACE, TOP_FACE);
     Matrix4f.rotate((float)Math.toRadians(0), Y_AXIS, TOP_FACE, TOP_FACE);
     Matrix4f.rotate((float)Math.toRadians(270), X_AXIS, TOP_FACE, TOP_FACE);
@@ -72,7 +76,7 @@ public class GeneratedCube extends QuadShape implements Shape {
 
   static {
     BOTTOM_FACE = new Matrix4f();
-    Matrix4f.translate(new Vector3f(0.0f, -8.0f, 0.0f), BOTTOM_FACE, BOTTOM_FACE);
+    Matrix4f.translate(new Vector3f(0.0f, -DIMENSION / 2, 0.0f), BOTTOM_FACE, BOTTOM_FACE);
     Matrix4f.rotate((float)Math.toRadians(0), Z_AXIS, BOTTOM_FACE, BOTTOM_FACE);
     Matrix4f.rotate((float)Math.toRadians(0), Y_AXIS, BOTTOM_FACE, BOTTOM_FACE);
     Matrix4f.rotate((float)Math.toRadians(-270), X_AXIS, BOTTOM_FACE, BOTTOM_FACE);
@@ -90,35 +94,26 @@ public class GeneratedCube extends QuadShape implements Shape {
   private static final List<Vector4f> fragmentVertices= new ArrayList<>();
 
   static {
-    float dimension = 16.0f;
-    float xpos = -dimension / 2;
-    float ypos = -dimension / 2;
-    for (int y = 0; y < dimension; y++) {
-      for (int x = 0; x < dimension; x++) {
+    float xpos = -DIMENSION / 2;
+    float ypos = -DIMENSION / 2;
+    for (int y = 0; y < DIMENSION; y++) {
+      for (int x = 0; x < DIMENSION; x++) {
         fragmentVertices.add(new Vector4f(xpos, ypos, 0.0f, 1.0f));
         fragmentVertices.add(new Vector4f(xpos + 1.0f, ypos, 0.0f, 1.0f));
         fragmentVertices.add(new Vector4f(xpos + 1.0f, ypos + 1.0f, 0.0f, 1.0f));
         fragmentVertices.add(new Vector4f(xpos, ypos + 1.0f, 0.0f, 1.0f));
         xpos += 1.0f;
       }
-      xpos = -dimension / 2;
+      xpos = -DIMENSION / 2;
       ypos += 1.0f;
     }
   }
 
   private Random random = new Random(42);
-  private Collection<Vertex> vertices;
 
-  public static void main(String[] args) {
-    new GeneratedCube();
-  }
-
-  public GeneratedCube() {
-    this.vertices = new ArrayList<>();
-    generateCube2(ColorCollection.DIRT_GARDEN);
-  }
-
-  private void generateCube2(float[] colors) {
+  public Voxel(byte type, float[] colorPalette) {
+    vertices = new ArrayList<>();
+    this.type = type;
     for (int face = 0; face < FACES.length; face++) {
       int c = 0;
       int fragmentIdx = 0;
@@ -126,9 +121,9 @@ public class GeneratedCube extends QuadShape implements Shape {
       for (Vector4f v : fragments) {
         Matrix4f.transform(FACES[face], v, v);
         if (fragmentIdx % 4 == 0) {
-          c = random.nextInt(colors.length / 3);
+          c = random.nextInt(colorPalette.length / 3);
         }
-        Vertex vertex = new Vertex().setXYZW(v.x, v.y, v.z, v.w).setRGB(colors[c * 3], colors[(c * 3) + 1], colors[(c * 3) + 2]);
+        Vertex vertex = new Vertex().setXYZW(v.x, v.y, v.z, v.w).setRGB(colorPalette[c * 3], colorPalette[(c * 3) + 1], colorPalette[(c * 3) + 2]);
         fragmentIdx++;
         vertices.add(vertex);
       }
@@ -139,6 +134,9 @@ public class GeneratedCube extends QuadShape implements Shape {
       setIndicesCCW(offset);
       offset += 4;
     }
+
+    dumpVertices();
+    dumpIndices();
   }
 
   private Collection<Vector4f> getFragmentVertices() {
@@ -150,6 +148,11 @@ public class GeneratedCube extends QuadShape implements Shape {
   }
 
   @Override
+  public Matrix4f getModelMatrix() {
+    return null;
+  }
+
+  @Override
   public Collection<Vertex> getVertices() {
     return vertices;
   }
@@ -157,5 +160,10 @@ public class GeneratedCube extends QuadShape implements Shape {
   @Override
   public short[] getIndices() {
     return super.indices;
+  }
+
+  @Override
+  public byte getType() {
+    return type;
   }
 }
