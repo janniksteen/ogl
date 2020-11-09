@@ -1,6 +1,5 @@
 package dk.norgaardsteen.ogl.mesh;
 
-import dk.norgaardsteen.ogl.mesh.color.ColorCollection;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;

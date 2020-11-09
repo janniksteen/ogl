@@ -1,14 +1,14 @@
 package dk.norgaardsteen.ogl.app;
 
-import dk.norgaardsteen.ogl.mesh.DeprecatedShape;
-import dk.norgaardsteen.ogl.shader.shared.AttribLocation;
 import dk.norgaardsteen.ogl.Base;
-import dk.norgaardsteen.ogl.shader.shared.UniformLocation;
 import dk.norgaardsteen.ogl.math.Trigonometric;
+import dk.norgaardsteen.ogl.mesh.DeprecatedShape;
 import dk.norgaardsteen.ogl.mesh.Quad;
 import dk.norgaardsteen.ogl.shader.ProgramLinker;
 import dk.norgaardsteen.ogl.shader.ProgramLinkerResult;
 import dk.norgaardsteen.ogl.shader.ShaderCompiler;
+import dk.norgaardsteen.ogl.shader.shared.AttribLocation;
+import dk.norgaardsteen.ogl.shader.shared.UniformLocation;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.input.Keyboard;

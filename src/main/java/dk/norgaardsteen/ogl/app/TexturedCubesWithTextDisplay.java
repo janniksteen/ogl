@@ -101,8 +101,8 @@ public class TexturedCubesWithTextDisplay extends Base {
   private final Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
   private final Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
 
-  private final static String FONT_TEXTURE_ATLAS_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x6_y12.png";
-  private final static String FONT_DESCRIPTION_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x6_y12.fnt";
+  private final static String FONT_TEXTURE_ATLAS_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x7_y14.png";
+  private final static String FONT_DESCRIPTION_FILE = "src/main/resources/img/uc0x0_0xff_Liberation Mono_x7_y14.fnt";
 
   private FontDescription fontDescription = new FontDescription(FONT_DESCRIPTION_FILE);
 
@@ -396,13 +396,15 @@ public class TexturedCubesWithTextDisplay extends Base {
           }
           break;
 
-        case Keyboard.KEY_F12:
+        case Keyboard.KEY_F11:
           if (showStats) {
             showStats = false;
           } else {
             showStats = true;
           }
           break;
+        case Keyboard.KEY_F12:
+          System.exit(0);
 
         // reset
         case Keyboard.KEY_ESCAPE:

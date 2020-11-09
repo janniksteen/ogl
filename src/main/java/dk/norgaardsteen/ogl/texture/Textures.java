@@ -3,7 +3,6 @@ package dk.norgaardsteen.ogl.texture;
 import dk.norgaardsteen.ogl.mesh.color.ColorCollection;
 import dk.norgaardsteen.ogl.mesh.color.ColorDescription;
 import dk.norgaardsteen.ogl.mesh.color.ColorPalette;
-import dk.norgaardsteen.ogl.resource.ApplicationContext;
 
 import java.util.HashMap;
 import java.util.Map;
